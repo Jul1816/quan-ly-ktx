@@ -1,4 +1,4 @@
-"""Module Giao diện: Bảng thông tin chỉ số tổng quan (Dashboard - Chức năng bổ trợ 1)
+"""Module Giao diện: Bảng thông tin chỉ số tổng quan (Tổng quan Vận hành)
 
 Hiển thị 4 thẻ chỉ số KPI vận hành theo Tháng/Năm được chọn:
 1. Tổng số sinh viên đang lưu trú

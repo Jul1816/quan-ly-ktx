@@ -1,4 +1,4 @@
-"""Module Kiểm chứng Ràng buộc Trigger (CN-05).
+"""Module Kiểm chứng Ràng buộc Trigger.
 
 Cung cấp các hàm nghiệp vụ và giao diện kiểm thử:
 - Tầng Dữ liệu & Xử lý Logic: Truy vấn thông tin trigger, audit phí lượt xe, chạy kịch bản test lỗi.
@@ -98,7 +98,7 @@ def run_trigger_test(test_id: int) -> tuple[bool, str, str]:
 def render_trigger_validation() -> None:
     """Hiển thị toàn bộ màn hình kiểm chứng ràng buộc trigger và tính phí lượt xe."""
     styled_header(
-        "Kiểm chứng Ràng buộc Trigger (CN-05)",
+        "Kiểm chứng Ràng buộc",
         "Thử nghiệm trực quan cơ chế chặn lỗi toàn vẹn và tính phí tự động của Trigger MySQL 8.0",
     )
 

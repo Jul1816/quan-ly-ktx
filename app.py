@@ -3,7 +3,7 @@
 File chạy chính của ứng dụng:
 - Cấu hình giao diện Streamlit layout wide.
 - Thanh Sidebar: Chọn Kỳ làm việc (Tháng/Năm) và Menu điều hướng 6 phân khu.
-- Màn hình khởi đầu: Tổng quan (Dashboard - Chức năng bổ trợ 1).
+- Màn hình khởi đầu: Tổng quan Vận hành.
 """
 
 import streamlit as st
@@ -78,12 +78,12 @@ with st.sidebar:
 
     st.markdown("### Menu Điều hướng")
     menu_options = [
-        "Tổng quan (Dashboard)",
-        "Báo cáo & Hóa đơn cốt lõi (CN-01 -> CN-04)",
-        "Kiểm chứng Ràng buộc Trigger (CN-05)",
-        "Quản lý Phòng & Lưu trú Sinh viên (Bổ trợ 2, 3, 4, 5)",
-        "Quản lý Bãi giữ xe & Xe vãng lai (Bổ trợ 6, 7, 8)",
-        "Ghi nhận Dịch vụ & Khách thăm (Bổ trợ 9)",
+        "Tổng quan",
+        "Báo cáo & Hóa đơn",
+        "Kiểm chứng Ràng buộc",
+        "Quản lý Phòng ở",
+        "Quản lý Bãi giữ xe",
+        "Dịch vụ & Khách thăm",
     ]
 
     lua_chon_menu = st.radio(
@@ -102,20 +102,20 @@ with st.sidebar:
     except Exception as ex:
         st.error(f"Mất kết nối CSDL: {ex}")
 
-if lua_chon_menu == "Tổng quan (Dashboard)":
+if lua_chon_menu == "Tổng quan":
     render_dashboard(thang_chon, nam_chon)
 
-elif lua_chon_menu == "Báo cáo & Hóa đơn cốt lõi (CN-01 -> CN-04)":
+elif lua_chon_menu == "Báo cáo & Hóa đơn":
     render_reports(thang_chon, nam_chon)
 
-elif lua_chon_menu == "Kiểm chứng Ràng buộc Trigger (CN-05)":
+elif lua_chon_menu == "Kiểm chứng Ràng buộc":
     render_trigger_validation()
 
-elif lua_chon_menu == "Quản lý Phòng & Lưu trú Sinh viên (Bổ trợ 2, 3, 4, 5)":
+elif lua_chon_menu == "Quản lý Phòng ở":
     render_room_management()
 
-elif lua_chon_menu == "Quản lý Bãi giữ xe & Xe vãng lai (Bổ trợ 6, 7, 8)":
+elif lua_chon_menu == "Quản lý Bãi giữ xe":
     render_parking_management()
 
-elif lua_chon_menu == "Ghi nhận Dịch vụ & Khách thăm (Bổ trợ 9)":
+elif lua_chon_menu == "Dịch vụ & Khách thăm":
     render_service_guest_management()

@@ -1,10 +1,10 @@
-"""Module Quan ly Phong va Luu tru Sinh vien.
+"""Module Quản lý Phòng và Lưu trú Sinh viên.
 
-Cung cap cac ham xu ly du lieu va logic nghiep vu:
-- Tab 1: Tra cuu phong, kiem tra cho trong va quan ly danh muc phong.
-- Tab 2: Quan ly ho so sinh vien va tra cuu lich su 360 do.
-- Tab 3: Tiep nhan va xep phong sinh vien.
-- Tab 4: Tra phong va chuyen phong qua Transaction.
+Cung cấp các hàm xử lý dữ liệu và logic nghiệp vụ:
+- Tab 1: Tra cứu phòng, kiểm tra chỗ trống và quản lý danh mục phòng.
+- Tab 2: Quản lý hồ sơ sinh viên và tra cứu thông tin chi tiết.
+- Tab 3: Tiếp nhận và xếp phòng sinh viên.
+- Tab 4: Trả phòng và chuyển phòng an toàn.
 """
 
 import datetime
@@ -187,7 +187,7 @@ def delete_student(ma_sv: str) -> tuple[bool, str]:
 
 
 def get_student_profile_360(ma_sv: str) -> dict[str, pd.DataFrame]:
-    """Truy vấn toàn bộ 4 nhóm lịch sử 360 độ của 1 sinh viên."""
+    """Truy vấn toàn bộ 4 nhóm lịch sử chi tiết của 1 sinh viên."""
     sv_id = ma_sv.strip()
     sql_o = """
     SELECT l.ma_o, l.so_phong, p.loai_phong, l.ngay_vao, l.ngay_ra, l.don_gia_ap_dung,
@@ -451,9 +451,9 @@ def render_tab1_rooms() -> None:
 
 
 def render_tab2_students() -> None:
-    """Giao diện Tab 2: Quản lý hồ sơ sinh viên và tra cứu lịch sử 360 độ."""
+    """Giao diện Tab 2: Quản lý hồ sơ sinh viên và tra cứu thông tin chi tiết."""
     all_sv = search_students("")
-    sub_crud, sub_360 = st.tabs(["Quản lý hồ sơ sinh viên", "Tra cứu hồ sơ 360 độ cá nhân"])
+    sub_crud, sub_360 = st.tabs(["Quản lý hồ sơ sinh viên", "Tra cứu thông tin cá nhân"])
 
     with sub_crud:
         keyword = st.text_input(
@@ -548,11 +548,11 @@ def render_tab2_students() -> None:
 
     with sub_360:
         if all_sv.empty:
-            st.info("Chưa có dữ liệu sinh viên để tra cứu hồ sơ 360 độ.")
+            st.info("Chưa có dữ liệu sinh viên để tra cứu thông tin cá nhân.")
             return
 
         sv_360_opts = [f"{r['ma_sv']} - {r['ho_ten']} ({r['lop']})" for _, r in all_sv.iterrows()]
-        sel_360_str = st.selectbox("Chọn sinh viên tra cứu hồ sơ 360 độ:", options=sv_360_opts, key="tab2_sel_360")
+        sel_360_str = st.selectbox("Chọn sinh viên tra cứu thông tin chi tiết:", options=sv_360_opts, key="tab2_sel_360")
         target_ma_sv = sel_360_str.split(" - ")[0]
         student_info = all_sv[all_sv["ma_sv"] == target_ma_sv].iloc[0]
 
@@ -698,13 +698,13 @@ def render_tab3_checkin() -> None:
 
 
 def render_tab4_checkout_transfer() -> None:
-    """Giao diện Tab 4: Trả phòng và Chuyển phòng qua Transaction an toàn."""
+    """Giao diện Tab 4: Trả phòng và Chuyển phòng an toàn."""
     active_stays = get_active_stays()
     if not active_stays:
         st.info("Hiện không có sinh viên nào đang lưu trú trong ký túc xá.")
         return
 
-    tab_out, tab_tr = st.tabs(["Nghiệp vụ Trả phòng (Checkout)", "Nghiệp vụ Chuyển phòng (Transaction)"])
+    tab_out, tab_tr = st.tabs(["Nghiệp vụ Trả phòng", "Nghiệp vụ Chuyển phòng"])
 
     stay_labels = [
         f"{s['so_phong']} - {s['ma_sv']} ({s['ho_ten']}) - Ngày vào: {s['ngay_vao']}"
@@ -739,9 +739,9 @@ def render_tab4_checkout_transfer() -> None:
                     st.rerun()
 
     with tab_tr:
-        st.markdown("**Chuyển phòng lưu trú bằng Transaction nguyên tử**")
+        st.markdown("**Chuyển phòng lưu trú an toàn**")
         st.caption(
-            "Cơ chế Transaction bảo toàn dữ liệu: Thực thi đồng thời Bước 1 (Chốt ngày ra phòng cũ = ngày liền trước ngày chuyển) "
+            "Cơ chế giao dịch bảo toàn dữ liệu: Thực thi đồng thời Bước 1 (Chốt ngày ra phòng cũ = ngày liền trước ngày chuyển) "
             "và Bước 2 (Tạo bản ghi vào phòng mới). Nếu phòng mới đã đầy hoặc có lỗi xảy ra, toàn bộ giao dịch sẽ tự động Rollback, "
             "giữ nguyên vẹn trạng thái phòng cũ của sinh viên."
         )
@@ -782,9 +782,9 @@ def render_tab4_checkout_transfer() -> None:
             key=f"tab4_price_{new_so_phong}",
         )
 
-        with st.popover("Xác nhận Chuyển phòng (Transaction)", width="stretch"):
+        with st.popover("Xác nhận Chuyển phòng", width="stretch"):
             st.markdown(f"**Cảnh báo:** Hành động này sẽ chuyển sinh viên **{chosen_tr_stay['ma_sv']}** từ phòng **{chosen_tr_stay['so_phong']}** sang phòng **{new_so_phong}**.")
-            st.caption("Giao dịch nguyên tử (Transaction) sẽ tự động rollback an toàn nếu phòng mới không đủ chỗ.")
+            st.caption("Giao dịch sẽ tự động rollback an toàn nếu phòng mới không đủ chỗ.")
             btn_transfer = st.button("Tôi chắc chắn muốn Chuyển phòng", type="primary", width="stretch", key="tab4_btn_transfer")
             if btn_transfer:
                 ok, msg = transfer_student_room(
@@ -806,17 +806,17 @@ def render_tab4_checkout_transfer() -> None:
 
 
 def render_room_management() -> None:
-    """Điều phối toàn bộ phân khu Quản lý Phòng & Lưu trú Sinh viên."""
+    """Điều phối toàn bộ phân khu Quản lý Phòng ở."""
     styled_header(
-        "Quản lý Phòng & Lưu trú Sinh viên",
-        "Phân khu nghiệp vụ: Tra cứu chỗ trống, Hồ sơ sinh viên 360 độ, Tiếp nhận xếp phòng và Trả/Chuyển phòng an toàn",
+        "Quản lý Phòng ở",
+        "Tra cứu chỗ trống, hồ sơ sinh viên, tiếp nhận xếp phòng và trả/chuyển phòng",
     )
 
     tab1, tab2, tab3, tab4 = st.tabs([
-        "Tra cứu phòng & Chỗ trống (Bổ trợ 2)",
-        "Quản lý hồ sơ SV & 360 độ (Bổ trợ 3)",
-        "Tiếp nhận & Xếp phòng (Bổ trợ 4)",
-        "Trả & Chuyển phòng qua Transaction (Bổ trợ 5)",
+        "Tra cứu phòng trống",
+        "Hồ sơ sinh viên",
+        "Tiếp nhận xếp phòng",
+        "Trả & Chuyển phòng",
     ])
 
     with tab1:

@@ -1,11 +1,11 @@
-"""Module Quan ly Dich vu va So truc Khach den tham.
+"""Module Quản lý Dịch vụ và Sổ trực Khách đến thăm.
 
-Cung cap cac ham truy van va xu ly nghiep vu tang du lieu:
-- Quan ly danh muc dich vu (bang dich_vu) va cap nhat don gia niem yet.
-- Ghi nhan luot su dung dich vu cua sinh vien (bang su_dung_dich_vu).
-- Tra cuu lich su su dung dich vu co bo loc sargable.
-- Quan ly thong tin khach den tham va ghi nhan luot den tham bang Transaction nguyen tu.
-- Tra cuu so truc khach den tham ket hop thong tin phong luu tru hien tai cua sinh vien.
+Cung cấp các hàm truy vấn và xử lý nghiệp vụ tầng dữ liệu:
+- Quản lý danh mục dịch vụ (bảng dich_vu) và cập nhật đơn giá niêm yết.
+- Ghi nhận lượt sử dụng dịch vụ của sinh viên (bảng su_dung_dich_vu).
+- Tra cứu lịch sử sử dụng dịch vụ có bộ lọc sargable.
+- Quản lý thông tin khách đến thăm và ghi nhận lượt đến thăm bằng transaction nguyên tử.
+- Tra cứu sổ trực khách đến thăm kết hợp thông tin phòng lưu trú hiện tại của sinh viên.
 """
 
 import datetime
@@ -327,7 +327,7 @@ def get_guest_visit_logs(ma_sv: Optional[str] = None) -> pd.DataFrame:
 
 
 def render_tab1_services() -> None:
-    """Tab 1: Sử dụng Dịch vụ & Quản lý danh mục (Bổ trợ 9)."""
+    """Tab 1: Sử dụng Dịch vụ & Quản lý danh mục."""
     df_services = get_services_catalog()
     df_history_all = get_service_usage_history()
 
@@ -578,7 +578,7 @@ def render_tab1_services() -> None:
 
 
 def render_tab2_guest_book() -> None:
-    """Tab 2: Sổ trực Khách thăm (Bổ trợ 9)."""
+    """Tab 2: Sổ trực Khách thăm."""
     st.markdown("**Ghi nhận khách đến thăm ký túc xá**")
     st.caption("Quản lý thông tin khách vào thăm sinh viên nội trú. Hệ thống liên kết tự động với phòng lưu trú hiện tại của sinh viên.")
 
@@ -736,15 +736,15 @@ def render_tab2_guest_book() -> None:
 
 
 def render_service_guest_management() -> None:
-    """Điều phối toàn bộ phân khu Ghi nhận Dịch vụ & Khách thăm (Bổ trợ 9)."""
+    """Điều phối toàn bộ phân khu Dịch vụ & Khách thăm."""
     styled_header(
-        "GHI NHẬN DỊCH VỤ & KHÁCH THĂM",
+        "Dịch vụ & Khách thăm",
         "Ghi nhận sinh viên sử dụng dịch vụ nội khu và sổ trực khách ghé thăm ký túc xá.",
     )
 
     tab1, tab2 = st.tabs([
-        "Sử dụng Dịch vụ (Bổ trợ 9)",
-        "Sổ trực Khách thăm (Bổ trợ 9)",
+        "Sử dụng dịch vụ",
+        "Sổ trực khách thăm",
     ])
 
     with tab1:

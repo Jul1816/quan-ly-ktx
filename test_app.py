@@ -43,12 +43,12 @@ class TestStreamlitApp(unittest.TestCase):
         at = AppTest.from_file(str(app_path), default_timeout=20)
         at.run()
         menu_items = [
-            "Tổng quan (Dashboard)",
-            "Báo cáo & Hóa đơn cốt lõi (CN-01 -> CN-04)",
-            "Kiểm chứng Ràng buộc Trigger (CN-05)",
-            "Quản lý Phòng & Lưu trú Sinh viên (Bổ trợ 2, 3, 4, 5)",
-            "Quản lý Bãi giữ xe & Xe vãng lai (Bổ trợ 6, 7, 8)",
-            "Ghi nhận Dịch vụ & Khách thăm (Bổ trợ 9)",
+            "Tổng quan",
+            "Báo cáo & Hóa đơn",
+            "Kiểm chứng Ràng buộc",
+            "Quản lý Phòng ở",
+            "Quản lý Bãi giữ xe",
+            "Dịch vụ & Khách thăm",
         ]
         for item in menu_items:
             at.sidebar.radio[0].set_value(item)
@@ -131,7 +131,7 @@ class TestStreamlitApp(unittest.TestCase):
         self.assertEqual(dau_thang, "2026-10-01")
         self.assertEqual(dau_thang_sau, "2026-11-01")
 
-        # Kiem tra CN-01: tong hop hoa don thang 10/2026
+        # Kiểm tra tổng hợp hóa đơn tháng 10/2026
         df_inv = get_monthly_invoices(10, 2026)
         self.assertEqual(len(df_inv), 5)
         inv_map = df_inv.set_index("ma_sv")["tong_phai_tra"].to_dict()
@@ -152,26 +152,26 @@ class TestStreamlitApp(unittest.TestCase):
         self.assertEqual(detail_sv1["tien_phu_thu_xe"], 6000)
         self.assertEqual(detail_sv1["tong_phai_tra"], 761000)
 
-        # Kiem tra CN-02: bao cao su dung dich vu
+        # Kiểm tra báo cáo sử dụng dịch vụ
         df_usage = get_service_usage("2026-10-01", "2026-10-31")
         self.assertGreater(len(df_usage), 0)
         df_usage_sv1 = get_service_usage("2026-10-01", "2026-10-31", ma_sv="SV001")
         self.assertEqual(len(df_usage_sv1), 2)
 
-        # Kiem tra CN-03: thong ke khach den tham
+        # Kiểm tra thống kê khách đến thăm
         df_visitors = get_visitor_statistics("2026-10-01", "2026-10-31")
         self.assertGreater(len(df_visitors), 0)
         df_visitors_sv1 = get_visitor_statistics("2026-10-01", "2026-10-31", ma_sv="SV001")
         self.assertEqual(len(df_visitors_sv1), 2)
 
-        # Kiem tra CN-04: doanh thu dich vu thang
+        # Kiểm tra doanh thu dịch vụ tháng
         df_rev, metrics = get_service_revenue(10, 2026)
         self.assertEqual(metrics["tien_ve"], 300000)
         self.assertEqual(metrics["tien_phu_thu"], 9000)
         self.assertEqual(metrics["tong_doanh_thu"], 694000)
         self.assertEqual(len(df_rev), 4)
 
-        # Kiem tra mau phieu thu in an HTML Bo tro 10
+        # Kiểm tra mẫu phiếu thu in ấn HTML
         from modules.reports import _generate_receipt_html, render_reports
         html_doc = _generate_receipt_html(detail_sv1)
         self.assertIn("@page", html_doc)
@@ -211,12 +211,12 @@ render_reports(10, 2026)
         self.assertGreater(len(at.metric), 0)
 
         # 2. Chuyen sang phan khu Bao cao & Hoa don cot loi
-        at.sidebar.radio[0].set_value("Báo cáo & Hóa đơn cốt lõi (CN-01 -> CN-04)").run()
+        at.sidebar.radio[0].set_value("Báo cáo & Hóa đơn").run()
         self.assertEqual(len(at.exception), 0)
         self.assertGreater(len(at.tabs), 0, "Phan khu bao cao chua duoc tich hop tabs vao app.py")
 
         # 3. Chuyen sang phan khu Kiem chung Rang buoc Trigger
-        at.sidebar.radio[0].set_value("Kiểm chứng Ràng buộc Trigger (CN-05)").run()
+        at.sidebar.radio[0].set_value("Kiểm chứng Ràng buộc").run()
         self.assertEqual(len(at.exception), 0)
         self.assertGreater(len(at.button), 0, "Phan khu kiem chung trigger chua duoc tich hop buttons vao app.py")
 
@@ -476,7 +476,7 @@ render_trigger_validation()
         at = AppTest.from_file(str(self.app_path), default_timeout=15)
         at.run()
         # Chọn menu phân khu phòng
-        at.sidebar.radio[0].set_value("Quản lý Phòng & Lưu trú Sinh viên (Bổ trợ 2, 3, 4, 5)").run()
+        at.sidebar.radio[0].set_value("Quản lý Phòng ở").run()
         if at.exception:
             error_msgs = [e.value for e in at.exception]
             self.fail(f"Menu Quản lý Phòng & Lưu trú gặp lỗi runtime: {error_msgs}")
@@ -590,9 +590,9 @@ render_trigger_validation()
         app_path = Path(__file__).parent / "app.py"
         at = AppTest.from_file(str(app_path), default_timeout=15)
         at.run()
-        # Chọn phân khu Quản lý Bãi giữ xe & Xe vãng lai
+        # Chọn phân khu Quản lý Bãi giữ xe
         radio_menu = at.sidebar.radio[0]
-        radio_menu.set_value("Quản lý Bãi giữ xe & Xe vãng lai (Bổ trợ 6, 7, 8)")
+        radio_menu.set_value("Quản lý Bãi giữ xe")
         at.run()
         self.assertFalse(at.exception, f"Lỗi render Phân khu 5: {[e.value for e in at.exception]}")
         # Kiểm tra tồn tại 3 tabs
@@ -697,7 +697,7 @@ render_trigger_validation()
         at.run()
         # Chọn phân khu Ghi nhận Dịch vụ & Khách thăm
         radio_menu = at.sidebar.radio[0]
-        radio_menu.set_value("Ghi nhận Dịch vụ & Khách thăm (Bổ trợ 9)")
+        radio_menu.set_value("Dịch vụ & Khách thăm")
         at.run()
         self.assertFalse(at.exception, f"Lỗi render Phân khu 6: {[e.value for e in at.exception]}")
         # Kiểm tra tồn tại 2 tabs

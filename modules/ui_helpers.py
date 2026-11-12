@@ -1,10 +1,10 @@
-"""Bo cong cu tien ich UI chuan hoa cho Streamlit App (UI Helpers).
+"""Bộ công cụ tiện ích UI chuẩn hóa cho Streamlit App (UI Helpers).
 
-Cung cap cac ham tien ich bam sat Streamlit Best Practices:
-- Su dung width="stretch" thay vi use_container_width da deprecated.
-- Dong bo bang mau thuong hieu #1E3A8A.
-- Ho tro xuat file Excel, CSV va dinh dang tien te VND.
-- Tuyet doi khong su dung icon hay emoji trong toan bo thanh phan UI.
+Cung cấp các hàm tiện ích bám sát Streamlit Best Practices:
+- Sử dụng width="stretch" thay vì use_container_width đã deprecated.
+- Đồng bộ bảng màu thương hiệu #1E3A8A.
+- Hỗ trợ xuất file Excel, CSV và định dạng tiền tệ VNĐ.
+- Tuyệt đối không sử dụng icon hay emoji trong toàn bộ thành phần UI.
 """
 
 import io
@@ -15,7 +15,7 @@ import pandas as pd
 
 
 def styled_header(title: str, subtitle: Optional[str] = None) -> None:
-    """Hien thi tieu de phan khu voi mo ta phu dong bo giao dien."""
+    """Hiển thị tiêu đề phân khu với mô tả phụ đồng bộ giao diện."""
     st.markdown(
         f"""
         <div style="padding: 5px 0 15px 0;">
@@ -28,7 +28,7 @@ def styled_header(title: str, subtitle: Optional[str] = None) -> None:
 
 
 def show_feedback(success: bool, message: str) -> None:
-    """Hien thi thong bao ket qua thuc thi an toan."""
+    """Hiển thị thông báo kết quả thực thi an toàn."""
     if success:
         st.success(message)
     else:
@@ -41,7 +41,7 @@ def display_table(
     height: Optional[int] = None,
     hide_index: bool = True,
 ) -> None:
-    """Hien thi bang du lieu chuan hoa voi width='stretch'."""
+    """Hiển thị bảng dữ liệu chuẩn hóa với width='stretch'."""
     if title:
         st.markdown(f"**{title}**")
     if df.empty:
@@ -66,7 +66,7 @@ def format_vnd(amount: Optional[Union[int, float, Decimal]]) -> str:
 
 
 def number_to_vietnamese_words(amount: Optional[Union[int, float, Decimal]]) -> str:
-    """Chuyen doi so tien nguyen sang chu tieng Viet thuan Python."""
+    """Chuyển đổi số tiền nguyên sang chữ tiếng Việt thuần Python."""
     if amount is None:
         return "Không đồng"
     try:
@@ -142,7 +142,7 @@ def number_to_vietnamese_words(amount: Optional[Union[int, float, Decimal]]) -> 
 
 
 def export_excel(df: pd.DataFrame, sheet_name: str = "BaoCao") -> bytes:
-    """Xuat DataFrame sang file Excel (.xlsx) bang BytesIO va openpyxl."""
+    """Xuất DataFrame sang file Excel (.xlsx) bằng BytesIO và openpyxl."""
     export_df = df.copy()
     for col in export_df.columns:
         if export_df[col].dtype == object:
@@ -157,7 +157,7 @@ def export_excel(df: pd.DataFrame, sheet_name: str = "BaoCao") -> bytes:
 
 
 def export_csv(df: pd.DataFrame) -> bytes:
-    """Xuat DataFrame sang CSV ma hoa utf-8-sig cho Excel tren Windows."""
+    """Xuất DataFrame sang CSV mã hóa utf-8-sig cho Excel trên Windows."""
     return df.to_csv(index=False).encode("utf-8-sig")
 
 
@@ -166,11 +166,11 @@ def render_export_buttons(
     file_prefix: str,
     key_prefix: str = "export",
 ) -> None:
-    """Tao 2 cot hien thi nut xuat file Excel va CSV khong dung icon."""
+    """Tạo 2 cột hiển thị nút xuất file Excel và CSV không dùng icon."""
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
-            label="Xuat file Excel (.xlsx)",
+            label="Xuất file Excel (.xlsx)",
             data=export_excel(df),
             file_name=f"{file_prefix}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -179,7 +179,7 @@ def render_export_buttons(
         )
     with col2:
         st.download_button(
-            label="Xuat file CSV (.csv)",
+            label="Xuất file CSV (.csv)",
             data=export_csv(df),
             file_name=f"{file_prefix}.csv",
             mime="text/csv",

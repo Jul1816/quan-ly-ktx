@@ -1,8 +1,8 @@
-"""Module Bao cao va Hoa don nghiep vu KTX (CN-01 den CN-04 va Bo tro 10).
+"""Module Báo cáo và Hóa đơn nghiệp vụ Ký túc xá.
 
-Tuan thu kien truc hai tang tach bach:
-- Tang Du lieu (Data Functions): Thuc thi truy van SQL CTE tra ve DataFrame va dict.
-- Tang Giao dien (UI Layer): Hien thi giao dien Streamlit khong su dung icon hay emoji.
+Tuân thủ kiến trúc hai tầng tách bạch:
+- Tầng Dữ liệu (Data Functions): Thực thi truy vấn SQL CTE trả về DataFrame và dict.
+- Tầng Giao diện (UI Layer): Hiển thị giao diện Streamlit không sử dụng icon hay emoji.
 """
 
 import calendar
@@ -24,14 +24,14 @@ from modules.ui_helpers import (
 
 
 def _to_date_str(val: Union[str, datetime.date, datetime.datetime]) -> str:
-    """Chuyen doi gia tri ngay sang chuoi YYYY-MM-DD."""
+    """Chuyển đổi giá trị ngày sang chuỗi YYYY-MM-DD."""
     if hasattr(val, "strftime"):
         return val.strftime("%Y-%m-%d")
     return str(val)
 
 
 def get_date_bounds(thang: int, nam: int) -> tuple[str, str]:
-    """Xac dinh moc thoi gian bat dau thang va bat dau thang tiep theo."""
+    """Xác định mốc thời gian bắt đầu tháng và bắt đầu tháng tiếp theo."""
     dau_thang = f"{nam:04d}-{thang:02d}-01"
     if thang == 12:
         dau_thang_sau = f"{nam + 1:04d}-01-01"
@@ -41,10 +41,10 @@ def get_date_bounds(thang: int, nam: int) -> tuple[str, str]:
 
 
 def get_monthly_invoices(thang: int, nam: int) -> pd.DataFrame:
-    """Truy van tong hop chi phi hoa don thang cua tat ca sinh vien dang luu tru.
+    """Truy vấn tổng hợp chi phí hóa đơn tháng của tất cả sinh viên đang lưu trú.
 
-    Nhung nguyen ban CTE TRUY VAN 1 tu 2.sql gom 4 thanh phan:
-    tien phong, tien dich vu, tien ve xe thang va phu thu luot xe.
+    Nhúng nguyên bản CTE Truy vấn tổng hợp từ 2.sql gồm 4 thành phần:
+    tiền phòng, tiền dịch vụ, tiền vé xe tháng và phụ thu lượt xe.
     """
     dau_thang, dau_thang_sau = get_date_bounds(thang, nam)
 
@@ -129,7 +129,7 @@ def get_student_invoice_detail(ma_sv: str, thang: int, nam: int) -> Optional[dic
       AND (ngay_ra IS NULL OR ngay_ra >= %s);
     """
     df_phong = db.fetch_df(q_phong, (ma_sv, dau_thang_sau, dau_thang))
-    so_phong = "Chua xep phong"
+    so_phong = "Chưa xếp phòng"
     if not df_phong.empty and df_phong["so_phong"].iloc[0]:
         so_phong = str(df_phong["so_phong"].iloc[0])
 
@@ -295,7 +295,7 @@ def _generate_receipt_html(detail: dict) -> str:
     ho_ten = detail.get("ho_ten", "")
     lop = detail.get("lop", "")
     que_quan = detail.get("que_quan", "")
-    so_phong = detail.get("so_phong", "Chua xep phong")
+    so_phong = detail.get("so_phong", "Chưa xếp phòng")
     thang = detail.get("thang", 10)
     nam = detail.get("nam", 2026)
 
@@ -310,7 +310,7 @@ def _generate_receipt_html(detail: dict) -> str:
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<title>Phieu Bao Thu Tien KTX - {ma_sv}</title>
+<title>Phiếu Báo Thu Tiền KTX - {ma_sv}</title>
 <style>
   @page {{
     size: A4 portrait;
@@ -536,16 +536,16 @@ def _generate_receipt_html(detail: dict) -> str:
 
 
 def _get_student_options() -> list[tuple[str, str]]:
-    """Lay danh sach ma va ten sinh vien de phuc vu bo loc."""
+    """Lấy danh sách mã và tên sinh viên để phục vụ bộ lọc."""
     df_sv = db.fetch_df("SELECT ma_sv, ho_ten, lop FROM sinh_vien ORDER BY ma_sv;")
-    options = [("Tat ca", "Tat ca sinh vien")]
+    options = [("Tat ca", "Tất cả sinh viên")]
     for _, row in df_sv.iterrows():
         options.append((row["ma_sv"], f"{row['ma_sv']} - {row['ho_ten']} ({row['lop']})"))
     return options
 
 
-def render_tab_cn01(thang: int, nam: int) -> None:
-    """Giao dien CN-01: Tong hop hoa don thang va phieu thu ca nhan."""
+def render_tab_hoa_don_thang(thang: int, nam: int) -> None:
+    """Giao diện: Tổng hợp hóa đơn tháng và phiếu thu cá nhân."""
     che_do = st.radio(
         "Hình thức xem hóa đơn:",
         options=["Xem toàn bộ danh sách", "Xem Phiếu báo thu cá nhân từng Sinh viên"],
@@ -581,7 +581,7 @@ def render_tab_cn01(thang: int, nam: int) -> None:
             "Tổng phải trả",
         ]
         display_table(display_df, title=f"Danh sách hóa đơn tháng {thang:02d}/{nam}")
-        render_export_buttons(df_inv, f"hoa_don_thang_{thang:02d}_{nam}", "cn01_all")
+        render_export_buttons(df_inv, f"hoa_don_thang_{thang:02d}_{nam}", "hd_all")
 
     else:
         if df_inv.empty:
@@ -682,7 +682,7 @@ def render_tab_cn01(thang: int, nam: int) -> None:
         b1, b2, b3 = st.columns(3)
         with b1:
             st.download_button(
-                label="Tai phieu thu in an (HTML)",
+                label="Tải phiếu thu in ấn (HTML)",
                 data=html_data,
                 file_name=f"phieu_thu_{detail['ma_sv']}_{thang:02d}_{nam}.html",
                 mime="text/html",
@@ -691,7 +691,7 @@ def render_tab_cn01(thang: int, nam: int) -> None:
             )
         with b2:
             st.download_button(
-                label="Xuat phieu thu (.xlsx)",
+                label="Xuất phiếu thu (.xlsx)",
                 data=export_excel(receipt_df, sheet_name=f"PhieuThu_{detail['ma_sv']}"),
                 file_name=f"phieu_thu_{detail['ma_sv']}_{thang:02d}_{nam}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -700,7 +700,7 @@ def render_tab_cn01(thang: int, nam: int) -> None:
             )
         with b3:
             st.download_button(
-                label="Xuat phieu thu (.csv)",
+                label="Xuất phiếu thu (.csv)",
                 data=export_csv(receipt_df),
                 file_name=f"phieu_thu_{detail['ma_sv']}_{thang:02d}_{nam}.csv",
                 mime="text/csv",
@@ -709,159 +709,172 @@ def render_tab_cn01(thang: int, nam: int) -> None:
             )
 
 
-def render_tab_cn02(thang: int, nam: int) -> None:
-    """Giao dien CN-02: Bao cao su dung dich vu theo ky voi bo loc."""
+def render_tab_su_dung_dich_vu(thang: int, nam: int) -> None:
+    """Giao diện: Báo cáo sử dụng dịch vụ theo kỳ với bộ lọc."""
     first_day = datetime.date(nam, thang, 1)
     last_day_num = calendar.monthrange(nam, thang)[1]
     last_day = datetime.date(nam, thang, last_day_num)
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        tu_ngay = st.date_input("Tu ngay", value=first_day, key="cn02_from")
+        tu_ngay = st.date_input("Từ ngày", value=first_day, key="cn02_from")
     with c2:
-        den_ngay = st.date_input("Den ngay", value=last_day, key="cn02_to")
+        den_ngay = st.date_input("Đến ngày", value=last_day, key="cn02_to")
     with c3:
         sv_opts = _get_student_options()
         sv_choice = st.selectbox(
-            "Loc theo sinh vien:",
+            "Lọc theo sinh viên:",
             options=[opt[0] for opt in sv_opts],
             format_func=lambda code: next((opt[1] for opt in sv_opts if opt[0] == code), code),
             key="cn02_sv",
         )
     with c4:
-        loai_dv_opts = ["Tat ca", "GIAT_LA", "TRONG_XE", "THUE_XE", "AN_UONG", "KHAC"]
-        loai_dv_choice = st.selectbox("Loai dich vu:", options=loai_dv_opts, key="cn02_dv")
+        loai_dv_map = {
+            "Tat ca": "Tất cả loại dịch vụ",
+            "GIAT_LA": "Giặt là",
+            "TRONG_XE": "Trông xe",
+            "THUE_XE": "Thuê xe",
+            "AN_UONG": "Ăn uống",
+            "KHAC": "Khác",
+        }
+        loai_dv_opts = list(loai_dv_map.keys())
+        loai_dv_choice = st.selectbox(
+            "Loại dịch vụ:",
+            options=loai_dv_opts,
+            format_func=lambda k: loai_dv_map.get(k, k),
+            key="cn02_dv",
+        )
 
     df_usage = get_service_usage(tu_ngay, den_ngay, sv_choice, loai_dv_choice)
 
     if df_usage.empty:
-        st.info("Khong co du lieu su dung dich vu trong khoang thoi gian duoc chon.")
+        st.info("Không có dữ liệu sử dụng dịch vụ trong khoảng thời gian được chọn.")
         return
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("So luot su dung", f"{df_usage['so_lan_su_dung'].sum():,}")
-    m2.metric("Tong so luong", f"{df_usage['tong_so_luong'].sum():,}")
-    m3.metric("Tong tien dich vu", format_vnd(df_usage["tong_tien"].sum()))
+    m1.metric("Số lượt sử dụng", f"{df_usage['so_lan_su_dung'].sum():,}")
+    m2.metric("Tổng số lượng", f"{df_usage['tong_so_luong'].sum():,}")
+    m3.metric("Tổng tiền dịch vụ", format_vnd(df_usage["tong_tien"].sum()))
 
     display_df = df_usage.copy()
     display_df["tong_tien"] = display_df["tong_tien"].apply(format_vnd)
     display_df.columns = [
-        "Ma SV",
-        "Ho ten",
-        "Ma DV",
-        "Ten dich vu",
-        "So lan su dung",
-        "Tong so luong",
-        "Tong tien",
+        "Mã SV",
+        "Họ và tên",
+        "Mã DV",
+        "Tên dịch vụ",
+        "Số lần sử dụng",
+        "Tổng số lượng",
+        "Tổng tiền",
     ]
-    display_table(display_df, title="Bang ke su dung dich vu chi tiet")
-    render_export_buttons(df_usage, f"su_dung_dich_vu_{tu_ngay}_{den_ngay}", "cn02")
+    display_table(display_df, title="Bảng kê sử dụng dịch vụ chi tiết")
+    render_export_buttons(df_usage, f"su_dung_dich_vu_{tu_ngay}_{den_ngay}", "dv_usage")
 
 
-def render_tab_cn03(thang: int, nam: int) -> None:
-    """Giao dien CN-03: Thong ke khach den tham sinh vien trong ky."""
+def render_tab_khach_den_tham(thang: int, nam: int) -> None:
+    """Giao diện: Thống kê khách đến thăm sinh viên trong kỳ."""
     first_day = datetime.date(nam, thang, 1)
     last_day_num = calendar.monthrange(nam, thang)[1]
     last_day = datetime.date(nam, thang, last_day_num)
 
     che_do = st.radio(
-        "Che do loc thoi gian:",
-        options=["Theo thang hien tai", "7 ngay gan nhat", "Khoang ngay tuy chon"],
+        "Chế độ lọc thời gian:",
+        options=["Theo tháng hiện tại", "7 ngày gần nhất", "Khoảng ngày tùy chọn"],
         horizontal=True,
-        key="cn03_mode",
+        key="khach_mode",
     )
 
-    if che_do == "Theo thang hien tai":
+    if che_do == "Theo tháng hiện tại":
         tu_ngay = first_day
         den_ngay = last_day
-    elif che_do == "7 ngay gan nhat":
+    elif che_do == "7 ngày gần nhất":
         den_ngay = last_day
         tu_ngay = last_day - datetime.timedelta(days=7)
     else:
         col_d1, col_d2 = st.columns(2)
         with col_d1:
-            tu_ngay = st.date_input("Tu ngay", value=first_day, key="cn03_from")
+            tu_ngay = st.date_input("Từ ngày", value=first_day, key="khach_from")
         with col_d2:
-            den_ngay = st.date_input("Den ngay", value=last_day, key="cn03_to")
+            den_ngay = st.date_input("Đến ngày", value=last_day, key="khach_to")
 
     sv_opts = _get_student_options()
     sv_choice = st.selectbox(
-        "Loc theo sinh vien co khach den tham:",
+        "Lọc theo sinh viên có khách đến thăm:",
         options=[opt[0] for opt in sv_opts],
         format_func=lambda code: next((opt[1] for opt in sv_opts if opt[0] == code), code),
-        key="cn03_sv",
+        key="khach_sv",
     )
 
     df_vis = get_visitor_statistics(tu_ngay, den_ngay, sv_choice)
 
     if df_vis.empty:
-        st.info("Khong co luot khach den tham nao trong khoang thoi gian duoc chon.")
+        st.info("Không có lượt khách đến thăm nào trong khoảng thời gian được chọn.")
         return
 
     m1, m2, m3 = st.columns(3)
-    m1.metric("Tong luot den tham", f"{df_vis['so_lan_den'].sum():,} luot")
-    m2.metric("So sinh vien co khach", f"{df_vis['ma_sv'].nunique()} sinh vien")
-    m3.metric("So luong khach duy nhat", f"{df_vis['cmt_khach'].nunique()} nguoi")
+    m1.metric("Tổng lượt đến thăm", f"{df_vis['so_lan_den'].sum():,} lượt")
+    m2.metric("Số sinh viên có khách", f"{df_vis['ma_sv'].nunique()} sinh viên")
+    m3.metric("Số lượng khách duy nhất", f"{df_vis['cmt_khach'].nunique()} người")
 
     display_df = df_vis.copy()
     display_df.columns = [
-        "Ma SV",
-        "Ten sinh vien",
-        "CMT khach",
-        "Ten khach",
-        "Ngay sinh khach",
-        "So lan den",
-        "Lan dau",
-        "Lan cuoi",
+        "Mã SV",
+        "Tên sinh viên",
+        "Số CMT / CCCD",
+        "Tên khách",
+        "Ngày sinh khách",
+        "Số lần đến",
+        "Lần đầu",
+        "Lần cuối",
     ]
-    display_table(display_df, title="Bang thong ke khach den tham chi tiet")
-    render_export_buttons(df_vis, f"khach_den_tham_{tu_ngay}_{den_ngay}", "cn03")
+    display_table(display_df, title="Bảng thống kê khách đến thăm chi tiết")
+    render_export_buttons(df_vis, f"khach_den_tham_{tu_ngay}_{den_ngay}", "khach")
 
 
-def render_tab_cn04(thang: int, nam: int) -> None:
-    """Giao dien CN-04: Doanh thu theo tung danh muc dich vu trong thang."""
+def render_tab_doanh_thu_dich_vu(thang: int, nam: int) -> None:
+    """Giao diện: Doanh thu theo từng danh mục dịch vụ trong tháng."""
     df_rev, metrics = get_service_revenue(thang, nam)
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Doanh thu ve xe thang", format_vnd(metrics["tien_ve"]))
-    c2.metric("Phu thu luot gui/lay xe", format_vnd(metrics["tien_phu_thu"]))
-    c3.metric("Tong doanh thu toan bo", format_vnd(metrics["tong_doanh_thu"]))
+    c1.metric("Doanh thu vé xe tháng", format_vnd(metrics["tien_ve"]))
+    c2.metric("Phụ thu lượt gửi/lấy xe", format_vnd(metrics["tien_phu_thu"]))
+    c3.metric("Tổng doanh thu toàn bộ", format_vnd(metrics["tong_doanh_thu"]))
 
     if df_rev.empty:
-        st.info("Khong co du lieu doanh thu dich vu cho ky duoc chon.")
+        st.info("Không có dữ liệu doanh thu dịch vụ cho kỳ được chọn.")
         return
 
     display_df = df_rev.copy()
     display_df["doanh_thu_thang"] = display_df["doanh_thu_thang"].apply(format_vnd)
     display_df.columns = [
-        "Ma DV",
-        "Ten dich vu",
-        "Loai dich vu",
-        "Doanh thu thang",
+        "Mã DV",
+        "Tên dịch vụ",
+        "Loại dịch vụ",
+        "Doanh thu tháng",
     ]
-    display_table(display_df, title=f"Doanh thu theo danh muc dich vu thang {thang:02d}/{nam}")
-    render_export_buttons(df_rev, f"doanh_thu_dich_vu_{thang:02d}_{nam}", "cn04")
+    display_table(display_df, title=f"Doanh thu theo danh mục dịch vụ tháng {thang:02d}/{nam}")
+    render_export_buttons(df_rev, f"doanh_thu_dich_vu_{thang:02d}_{nam}", "doanh_thu")
 
 
 def render_reports(thang_sidebar: int, nam_sidebar: int) -> None:
-    """Dieu phoi 4 Tab chuc nang bao cao va hoa don nghiep vu KTX."""
+    """Điều phối 4 Tab chức năng báo cáo và hóa đơn nghiệp vụ KTX."""
     styled_header(
-        "Bao cao & Hoa don cot loi",
-        f"Cac bao cao nghiep vu tong hop thang {thang_sidebar:02d}/{nam_sidebar}",
+        "Báo cáo & Hóa đơn",
+        f"Các báo cáo nghiệp vụ tổng hợp tháng {thang_sidebar:02d}/{nam_sidebar}",
     )
 
     tab1, tab2, tab3, tab4 = st.tabs([
-        "CN-01: Tong hop hoa don thang",
-        "CN-02: Bao cao su dung dich vu",
-        "CN-03: Thong ke khach den tham",
-        "CN-04: Doanh thu dich vu theo thang",
+        "Tổng hợp hóa đơn",
+        "Báo cáo sử dụng dịch vụ",
+        "Thống kê khách đến thăm",
+        "Doanh thu dịch vụ",
     ])
 
     with tab1:
-        render_tab_cn01(thang_sidebar, nam_sidebar)
+        render_tab_hoa_don_thang(thang_sidebar, nam_sidebar)
     with tab2:
-        render_tab_cn02(thang_sidebar, nam_sidebar)
+        render_tab_su_dung_dich_vu(thang_sidebar, nam_sidebar)
     with tab3:
-        render_tab_cn03(thang_sidebar, nam_sidebar)
+        render_tab_khach_den_tham(thang_sidebar, nam_sidebar)
     with tab4:
-        render_tab_cn04(thang_sidebar, nam_sidebar)
+        render_tab_doanh_thu_dich_vu(thang_sidebar, nam_sidebar)

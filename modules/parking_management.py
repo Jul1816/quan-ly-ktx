@@ -1,9 +1,9 @@
-"""Module Quan ly Bai giu xe va Xe vang lai.
+"""Module Quản lý Bãi giữ xe và Xe vãng lai.
 
-Cung cap cac ham truy van va xu ly nghiep vu tang du lieu:
-- Quan ly the xe ve thang cua sinh vien (dang ky, huy the, tra cuu danh sach).
-- Ghi nhan luot gui/lay xe ve thang va kiem soat phu thu tu dong qua Trigger MySQL.
-- Tra cuu nhat ky luot gui/lay xe voi cac bo loc sargable.
+Cung cấp các hàm truy vấn và xử lý nghiệp vụ tầng dữ liệu:
+- Quản lý thẻ xe vé tháng của sinh viên (đăng ký, hủy thẻ, tra cứu danh sách).
+- Ghi nhận lượt gửi/lấy xe vé tháng và kiểm soát phụ thu tự động qua Trigger MySQL.
+- Tra cứu nhật ký lượt gửi/lấy xe với các bộ lọc sargable.
 """
 
 import datetime
@@ -224,7 +224,7 @@ def get_parking_logs(
 
 
 def render_tab1_monthly_tickets() -> None:
-    """Tab 1: Quản lý vé xe tháng của sinh viên (Bổ trợ 6)."""
+    """Tab 1: Quản lý vé xe tháng của sinh viên."""
     df_tickets = get_monthly_tickets()
 
     # 1. Hiển thị 3 chỉ số nhanh
@@ -397,7 +397,7 @@ def render_tab1_monthly_tickets() -> None:
 
 
 def render_tab2_parking_turns() -> None:
-    """Tab 2: Quẹt thẻ lượt xe vé tháng (Bổ trợ 7)."""
+    """Tab 2: Quẹt thẻ lượt xe vé tháng."""
     st.markdown("**Ghi nhận lượt xe ra / vào bãi**")
     st.caption(
         "Chính sách bãi xe: Miễn phí 2 lượt gửi/lấy đầu tiên trong ngày. "
@@ -522,7 +522,7 @@ def render_tab2_parking_turns() -> None:
 
 
 def render_tab3_visitor_vehicles() -> None:
-    """Tab 3: Tiện ích tính tiền xe vãng lai tại cổng (Bổ trợ 8)."""
+    """Tab 3: Tiện ích tính tiền xe vãng lai tại cổng."""
     st.info(
         "Theo quy định nghiệp vụ KTX, các xe không đăng ký vé tháng (xe vãng lai của khách "
         "hoặc sinh viên) được thu tiền mặt trực tiếp theo từng lượt tại bốt bảo vệ và KHÔNG lưu vào CSDL."
@@ -608,14 +608,14 @@ def render_tab3_visitor_vehicles() -> None:
 def render_parking_management() -> None:
     """Điều phối toàn bộ phân khu Quản lý Bãi giữ xe & Xe vãng lai."""
     styled_header(
-        "QUẢN LÝ BÃI GIỮ XE & XE VÃNG LAI",
+        "Quản lý Bãi giữ xe",
         "Đăng ký vé tháng, quẹt thẻ lượt gửi/lấy và tiện ích tính tiền xe vãng lai tại cổng.",
     )
 
     tab1, tab2, tab3 = st.tabs([
-        "Vé xe tháng (Bổ trợ 6)",
-        "Quẹt thẻ lượt xe (Bổ trợ 7)",
-        "Tiện ích xe vãng lai (Bổ trợ 8)",
+        "Vé xe tháng",
+        "Lượt gửi & Lấy xe",
+        "Thu phí xe vãng lai",
     ])
 
     with tab1:
