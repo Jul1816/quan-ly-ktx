@@ -247,15 +247,51 @@ def update_student(
 
 
 def delete_student(ma_sv: str) -> tuple[bool, str]:
-    """Xóa sinh viên, bắt lỗi khóa ngoại thân thiện."""
-    sql = "DELETE FROM sinh_vien WHERE ma_sv = %s;"
-    success, msg = db.execute_query(sql, (ma_sv.strip(),))
-    if not success and ("foreign key" in msg.lower() or "1451" in msg):
-        return (
-            False,
-            f"Không thể xóa sinh viên {ma_sv}: Sinh viên đã có dữ liệu ràng buộc lưu trú, dịch vụ, gửi xe hoặc khách thăm trong CSDL.",
-        )
-    return success, msg
+    """Xóa sinh viên sau khi kiểm tra không còn ràng buộc active.
+
+    Ràng buộc active (block xóa):
+      - Đang ở phòng: lich_su_o_phong.ngay_ra IS NULL
+      - Xe chưa hủy vé: xe_ve_thang.ngay_huy IS NULL
+
+    Lịch sử đã kết thúc (phòng đã trả, xe đã hủy, dịch vụ, khách thăm)
+    sẽ được xóa cascade theo thứ tự FK trong cùng 1 transaction.
+    """
+    sv_id = ma_sv.strip()
+
+    # --- Pre-flight: kiểm tra đang ở phòng ---
+    df_active_room = db.fetch_df(
+        "SELECT so_phong FROM lich_su_o_phong WHERE ma_sv = %s AND ngay_ra IS NULL LIMIT 1;",
+        (sv_id,),
+    )
+    if not df_active_room.empty:
+        phong = df_active_room.iloc[0]["so_phong"]
+        return False, f"Không thể xóa sinh viên {sv_id}: Sinh viên đang ở phòng {phong}. Vui lòng trả phòng trước."
+
+    # --- Pre-flight: kiểm tra xe vé tháng còn hiệu lực ---
+    df_active_xe = db.fetch_df(
+        "SELECT bien_so FROM xe_ve_thang WHERE ma_sv = %s AND ngay_huy IS NULL LIMIT 1;",
+        (sv_id,),
+    )
+    if not df_active_xe.empty:
+        bien_so = df_active_xe.iloc[0]["bien_so"]
+        return False, f"Không thể xóa sinh viên {sv_id}: Xe {bien_so} vẫn còn vé tháng hiệu lực. Vui lòng hủy vé trước."
+
+    # --- Xóa cascade lịch sử theo thứ tự FK rồi xóa sinh viên ---
+    operations = [
+        # luot_gui_lay_xe FK → xe_ve_thang (phải xóa trước xe_ve_thang)
+        ("DELETE lgx FROM luot_gui_lay_xe lgx JOIN xe_ve_thang x ON lgx.bien_so = x.bien_so WHERE x.ma_sv = %s;", (sv_id,)),
+        # xe_ve_thang FK → sinh_vien
+        ("DELETE FROM xe_ve_thang WHERE ma_sv = %s;", (sv_id,)),
+        # su_dung_dich_vu FK → sinh_vien
+        ("DELETE FROM su_dung_dich_vu WHERE ma_sv = %s;", (sv_id,)),
+        # luot_den_choi FK → sinh_vien
+        ("DELETE FROM luot_den_choi WHERE ma_sv = %s;", (sv_id,)),
+        # lich_su_o_phong FK → sinh_vien (toàn bộ đã có ngay_ra, tức đã trả phòng)
+        ("DELETE FROM lich_su_o_phong WHERE ma_sv = %s;", (sv_id,)),
+        # sinh_vien
+        ("DELETE FROM sinh_vien WHERE ma_sv = %s;", (sv_id,)),
+    ]
+    return db.execute_transaction(operations)
 
 
 def get_student_profile_360(ma_sv: str) -> dict[str, pd.DataFrame]:

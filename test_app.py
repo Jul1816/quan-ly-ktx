@@ -358,10 +358,10 @@ render_trigger_validation()
         self.assertFalse(p360["xe_ve_thang"].empty)
         self.assertFalse(p360["khach_tham"].empty)
 
-        # Kiem tra xoa SV001 bi chan boi rang buoc khoa ngoai
+        # Kiem tra xoa SV001 bi chan vi dang o phong (active stay)
         success, msg = delete_student("SV001")
         self.assertFalse(success)
-        self.assertIn("ràng buộc", msg.lower())
+        self.assertIn("đang ở phòng", msg.lower())
 
         # Kiem tra them, cap nhat va xoa sinh vien moi hop le
         delete_student("SV999")  # Dam bao khong bi sot tu test cu
