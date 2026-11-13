@@ -19,6 +19,67 @@ from modules.ui_helpers import (
     styled_header,
 )
 
+ROOM_TYPE_PRESETS: dict[str, dict[str, Union[int, float]]] = {
+    "Phòng 2 người": {"capacity": 2, "suggested_price": 650000.0},
+    "Phòng 4 người": {"capacity": 4, "suggested_price": 400000.0},
+    "Phòng 6 người": {"capacity": 6, "suggested_price": 300000.0},
+    "Phòng 8 người": {"capacity": 8, "suggested_price": 250000.0},
+}
+CUSTOM_PRESET_LABEL: str = "Khác / Tùy chỉnh"
+
+
+def get_preset_by_room_type(loai_phong: str, capacity: int) -> tuple[str, str]:
+    """Nhận diện loại phòng thuộc Preset chuẩn hay Tùy chỉnh.
+
+    Trả về:
+        (preset_selected, custom_text_if_any)
+    """
+    clean_loai = (loai_phong or "").strip()
+    try:
+        cap_val = int(capacity)
+    except (ValueError, TypeError):
+        cap_val = 0
+    if clean_loai in ROOM_TYPE_PRESETS and ROOM_TYPE_PRESETS[clean_loai]["capacity"] == cap_val:
+        return clean_loai, ""
+    return CUSTOM_PRESET_LABEL, clean_loai
+
+
+def validate_room_inputs(
+    so_phong: str, loai_phong: str, don_gia_thang: float, so_nguoi_toi_da: int
+) -> tuple[bool, str]:
+    """Xác thực tính hợp lệ và sự đồng bộ giữa Loại phòng và Sức chứa."""
+    clean_so = (so_phong or "").strip()
+    clean_loai = (loai_phong or "").strip()
+    if not clean_so:
+        return False, "Số phòng không được để trống."
+    if len(clean_so) > 10:
+        return False, "Số phòng không được vượt quá 10 ký tự."
+    if not clean_loai:
+        return False, "Loại phòng không được để trống."
+    if len(clean_loai) > 30:
+        return False, "Loại phòng không được vượt quá 30 ký tự."
+
+    try:
+        price = float(don_gia_thang)
+        cap = int(so_nguoi_toi_da)
+    except (ValueError, TypeError):
+        return False, "Đơn giá hoặc sức chứa không đúng định dạng số."
+
+    if price < 0:
+        return False, "Đơn giá tháng không được nhỏ hơn 0 VNĐ."
+    if cap < 1 or cap > 20:
+        return False, "Sức chứa tối đa phải nằm trong khoảng từ 1 đến 20 người."
+
+    if clean_loai in ROOM_TYPE_PRESETS:
+        expected_cap = ROOM_TYPE_PRESETS[clean_loai]["capacity"]
+        if cap != expected_cap:
+            return (
+                False,
+                f"Lỗi bất đồng bộ: {clean_loai} quy định sức chứa là {expected_cap} người, nhưng hệ thống nhận được {cap} người.",
+            )
+
+    return True, "Hợp lệ"
+
 
 def get_room_occupancy_list(only_available: bool = False) -> pd.DataFrame:
     """Truy van danh sach phong ket hop dem so sinh vien dang o thuc te."""
@@ -73,8 +134,12 @@ def add_new_room(
     so_phong: str, loai_phong: str, don_gia_thang: float, so_nguoi_toi_da: int
 ) -> tuple[bool, str]:
     """Them phong moi vao bang phong."""
+    valid, v_msg = validate_room_inputs(so_phong, loai_phong, don_gia_thang, so_nguoi_toi_da)
+    if not valid:
+        return False, v_msg
+
     sql = "INSERT INTO phong (so_phong, loai_phong, don_gia_thang, so_nguoi_toi_da) VALUES (%s, %s, %s, %s);"
-    return db.execute_query(
+    ok, msg = db.execute_query(
         sql,
         (
             so_phong.strip(),
@@ -83,12 +148,19 @@ def add_new_room(
             int(so_nguoi_toi_da),
         ),
     )
+    if not ok and ("duplicate entry" in msg.lower() or "1062" in msg):
+        return False, f"Số phòng {so_phong.strip()} đã tồn tại trong danh mục phòng."
+    return ok, msg
 
 
 def update_room(
     so_phong: str, loai_phong: str, don_gia_thang: float, so_nguoi_toi_da: int
 ) -> tuple[bool, str]:
     """Cap nhat thong tin phong, chan neu suc chua nho hon so nguoi dang o thuc te."""
+    valid, v_msg = validate_room_inputs(so_phong, loai_phong, don_gia_thang, so_nguoi_toi_da)
+    if not valid:
+        return False, v_msg
+
     df_current = get_students_in_room(so_phong)
     so_dang_o = len(df_current)
     if int(so_nguoi_toi_da) < so_dang_o:
@@ -406,45 +478,147 @@ def render_tab1_rooms() -> None:
                 display_table(df_sv_show, title=f"Danh sách sinh viên đang ở phòng {phong_chon} ({len(df_sv_show)} người)")
 
     with st.expander("Thêm phòng mới vào danh mục"):
-        with st.form("form_add_room"):
-            c1, c2 = st.columns(2)
-            new_so = c1.text_input("Số phòng mới (VD: B202):", max_chars=10)
-            new_loai = c2.selectbox(
-                "Loại phòng:",
-                options=["Phòng 2 người", "Phòng 4 người", "Phòng 6 người", "Phòng 8 người"],
+        preset_options = list(ROOM_TYPE_PRESETS.keys()) + [CUSTOM_PRESET_LABEL]
+
+        def on_add_preset_change():
+            sel = st.session_state.get("add_room_preset_sel")
+            if sel in ROOM_TYPE_PRESETS:
+                st.session_state["add_room_gia"] = float(ROOM_TYPE_PRESETS[sel]["suggested_price"])
+                st.session_state["add_room_chua"] = int(ROOM_TYPE_PRESETS[sel]["capacity"])
+
+        if "add_room_gia" not in st.session_state:
+            st.session_state["add_room_gia"] = float(ROOM_TYPE_PRESETS["Phòng 4 người"]["suggested_price"])
+        if "add_room_chua" not in st.session_state:
+            st.session_state["add_room_chua"] = int(ROOM_TYPE_PRESETS["Phòng 4 người"]["capacity"])
+
+        if st.session_state.get("reset_add_room_fields"):
+            st.session_state["add_room_so"] = ""
+            if "add_room_custom_name" in st.session_state:
+                st.session_state["add_room_custom_name"] = ""
+            st.session_state["reset_add_room_fields"] = False
+
+        c1, c2 = st.columns(2)
+        new_so = c1.text_input("Số phòng mới (VD: B202):", max_chars=10, key="add_room_so")
+        new_preset = c2.selectbox(
+            "Loại phòng:",
+            options=preset_options,
+            index=1,  # Mặc định: Phòng 4 người
+            key="add_room_preset_sel",
+            on_change=on_add_preset_change,
+        )
+
+        is_custom = (new_preset == CUSTOM_PRESET_LABEL)
+        custom_loai = ""
+        if is_custom:
+            custom_loai = st.text_input("Tên loại phòng tùy chỉnh:", max_chars=30, key="add_room_custom_name")
+
+        c3, c4 = st.columns(2)
+        new_gia = c3.number_input(
+            "Đơn giá tháng (VNĐ):",
+            min_value=0.0,
+            step=50000.0,
+            key="add_room_gia",
+        )
+        if is_custom:
+            new_chua = c4.number_input(
+                "Sức chứa tối đa (người):",
+                min_value=1,
+                max_value=20,
+                value=int(st.session_state.get("add_room_chua", 4)),
+                step=1,
+                key="add_room_chua_custom",
             )
-            c3, c4 = st.columns(2)
-            new_gia = c3.number_input("Đơn giá tháng (VNĐ):", min_value=0.0, value=400000.0, step=50000.0)
-            new_chua = c4.number_input("Sức chứa tối đa (người):", min_value=1, max_value=20, value=4, step=1)
-            btn_add = st.form_submit_button("Lưu phòng mới", width="stretch")
-            if btn_add:
-                if not new_so.strip():
-                    st.warning("Vui lòng nhập số phòng.")
-                else:
-                    ok, msg = add_new_room(new_so, new_loai, new_gia, new_chua)
-                    show_feedback(ok, f"Đã thêm phòng {new_so} thành công!" if ok else msg)
-                    if ok:
-                        st.rerun()
+        else:
+            preset_cap = int(ROOM_TYPE_PRESETS[new_preset]["capacity"])
+            c4.number_input(
+                "Sức chứa tối đa (người):",
+                min_value=1,
+                max_value=20,
+                value=preset_cap,
+                step=1,
+                disabled=True,
+                key=f"add_room_chua_preset_{preset_cap}",
+            )
+            new_chua = preset_cap
+
+        btn_add = st.button("Lưu phòng mới", width="stretch", key="btn_save_add_room")
+        if btn_add:
+            final_so = (new_so or "").strip()
+            final_loai = (custom_loai or "").strip() if is_custom else new_preset
+            if not final_so:
+                st.warning("Vui lòng nhập số phòng.")
+            elif is_custom and not final_loai:
+                st.warning("Vui lòng nhập tên loại phòng tùy chỉnh.")
+            else:
+                ok, msg = add_new_room(final_so, final_loai, new_gia, new_chua)
+                show_feedback(ok, f"Đã thêm phòng {final_so} thành công!" if ok else msg)
+                if ok:
+                    st.session_state["reset_add_room_fields"] = True
+                    st.rerun()
 
     with st.expander("Cập nhật thông tin phòng"):
         if not df_all.empty:
             phong_upd = st.selectbox("Chọn phòng cần cập nhật:", options=df_all["so_phong"].tolist(), key="sel_room_to_update")
             curr_room = df_all[df_all["so_phong"] == phong_upd].iloc[0]
-            with st.form("form_update_room"):
-                c1, c2 = st.columns(2)
-                upd_loai = c1.text_input("Loại phòng:", value=str(curr_room["loai_phong"]))
-                upd_gia = c2.number_input("Đơn giá tháng (VNĐ):", min_value=0.0, value=float(curr_room["don_gia_thang"]), step=50000.0)
-                upd_chua = st.number_input(
+
+            init_preset, init_custom = get_preset_by_room_type(curr_room["loai_phong"], curr_room["so_nguoi_toi_da"])
+            preset_opts = list(ROOM_TYPE_PRESETS.keys()) + [CUSTOM_PRESET_LABEL]
+            default_idx = preset_opts.index(init_preset) if init_preset in preset_opts else len(preset_opts) - 1
+
+            upd_preset = st.selectbox(
+                "Loại phòng cập nhật:",
+                options=preset_opts,
+                index=default_idx,
+                key=f"upd_preset_sel_{phong_upd}",
+            )
+            is_upd_custom = (upd_preset == CUSTOM_PRESET_LABEL)
+            upd_custom_loai = ""
+            if is_upd_custom:
+                upd_custom_loai = st.text_input(
+                    "Tên loại phòng tùy chỉnh:",
+                    value=str(curr_room["loai_phong"]),
+                    max_chars=30,
+                    key=f"upd_custom_name_{phong_upd}",
+                )
+
+            c1, c2 = st.columns(2)
+            upd_gia = c1.number_input(
+                "Đơn giá tháng (VNĐ):",
+                min_value=0.0,
+                value=float(curr_room["don_gia_thang"]),
+                step=50000.0,
+                key=f"upd_gia_{phong_upd}",
+            )
+            if is_upd_custom:
+                upd_chua = c2.number_input(
                     "Sức chứa tối đa mới:",
                     min_value=1,
                     max_value=20,
                     value=int(curr_room["so_nguoi_toi_da"]),
                     step=1,
+                    key=f"upd_chua_custom_{phong_upd}",
                 )
-                st.caption(f"Lưu ý: Phòng hiện có {curr_room['so_nguoi_dang_o']} sinh viên đang ở. Sức chứa mới không được nhỏ hơn số này.")
-                btn_upd = st.form_submit_button("Lưu cập nhật phòng", width="stretch")
-                if btn_upd:
-                    ok, msg = update_room(phong_upd, upd_loai, upd_gia, upd_chua)
+            else:
+                preset_cap = int(ROOM_TYPE_PRESETS[upd_preset]["capacity"])
+                c2.number_input(
+                    "Sức chứa tối đa mới:",
+                    min_value=1,
+                    max_value=20,
+                    value=preset_cap,
+                    step=1,
+                    disabled=True,
+                    key=f"upd_chua_preset_{preset_cap}_{phong_upd}",
+                )
+                upd_chua = preset_cap
+
+            st.caption(f"Lưu ý: Phòng hiện có {curr_room['so_nguoi_dang_o']} sinh viên đang ở. Sức chứa mới không được nhỏ hơn số này.")
+            btn_upd = st.button("Lưu cập nhật phòng", width="stretch", key=f"btn_save_upd_{phong_upd}")
+            if btn_upd:
+                final_loai = upd_custom_loai.strip() if is_upd_custom else upd_preset
+                if is_upd_custom and not final_loai:
+                    st.warning("Vui lòng nhập tên loại phòng tùy chỉnh.")
+                else:
+                    ok, msg = update_room(phong_upd, final_loai, upd_gia, upd_chua)
                     show_feedback(ok, f"Đã cập nhật phòng {phong_upd} thành công!" if ok else msg)
                     if ok:
                         st.rerun()

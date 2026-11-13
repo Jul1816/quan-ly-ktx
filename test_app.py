@@ -703,6 +703,87 @@ render_trigger_validation()
         # Kiểm tra tồn tại 2 tabs
         self.assertTrue(len(at.tabs) >= 2, "Phân khu 6 không hiển thị đủ 2 tabs nghiệp vụ.")
 
+    def test_room_presets_and_validation(self):
+        """Kiểm tra danh mục Preset, hàm nhận diện thông minh và hàm validate phòng."""
+        from modules.room_management import (
+            ROOM_TYPE_PRESETS,
+            CUSTOM_PRESET_LABEL,
+            get_preset_by_room_type,
+            validate_room_inputs,
+        )
+        # 1. Kiểm tra cấu hình Preset
+        self.assertIn("Phòng 2 người", ROOM_TYPE_PRESETS)
+        self.assertEqual(ROOM_TYPE_PRESETS["Phòng 2 người"]["capacity"], 2)
+        self.assertEqual(ROOM_TYPE_PRESETS["Phòng 4 người"]["capacity"], 4)
+        self.assertEqual(ROOM_TYPE_PRESETS["Phòng 6 người"]["capacity"], 6)
+        self.assertEqual(ROOM_TYPE_PRESETS["Phòng 8 người"]["capacity"], 8)
+
+        # 2. Kiểm tra hàm get_preset_by_room_type
+        p_key, custom_txt = get_preset_by_room_type("Phòng 4 người", 4)
+        self.assertEqual(p_key, "Phòng 4 người")
+        self.assertEqual(custom_txt, "")
+
+        p_custom, custom_txt2 = get_preset_by_room_type("Phong 4 nguoi tieu chuan", 4)
+        self.assertEqual(p_custom, CUSTOM_PRESET_LABEL)
+        self.assertEqual(custom_txt2, "Phong 4 nguoi tieu chuan")
+
+        # 3. Kiểm tra validation đồng bộ hợp lệ
+        ok, msg = validate_room_inputs("B202", "Phòng 4 người", 400000, 4)
+        self.assertTrue(ok)
+
+        # 4. Kiểm tra validation phát hiện bất đồng bộ Preset và Sức chứa
+        ok_err, msg_err = validate_room_inputs("B202", "Phòng 2 người", 650000, 4)
+        self.assertFalse(ok_err)
+        self.assertIn("đồng bộ", msg_err.lower())
+
+        # 5. Kiểm tra validation phòng tùy chỉnh
+        ok_c, _ = validate_room_inputs("VIP101", "Phòng VIP dịch vụ", 1200000, 1)
+        self.assertTrue(ok_c)
+
+        # 6. Kiểm tra số phòng rỗng, độ dài > 10, loại phòng > 30 hoặc sức chứa ngoài khoảng
+        ok_empty, _ = validate_room_inputs("", "Phòng 4 người", 400000, 4)
+        self.assertFalse(ok_empty)
+        ok_so_long, _ = validate_room_inputs("B202_QUAPHO_DAI", "Phòng 4 người", 400000, 4)
+        self.assertFalse(ok_so_long)
+        ok_loai_long, _ = validate_room_inputs("B203", "Phòng có tên quá dài vượt quá ba mươi ký tự", 400000, 4)
+        self.assertFalse(ok_loai_long)
+        ok_out, _ = validate_room_inputs("B203", "Phòng tùy chỉnh", 400000, 25)
+        self.assertFalse(ok_out)
+
+    def test_tab1_add_room_preset_render(self):
+        """Kiểm tra các thành phần giao diện thêm phòng mới render đúng theo Preset."""
+        from streamlit.testing.v1 import AppTest
+        from pathlib import Path
+
+        app_path = Path(__file__).parent / "app.py"
+        at = AppTest.from_file(str(app_path), default_timeout=20)
+        at.run()
+        at.sidebar.radio[0].set_value("Quản lý Phòng ở")
+        at.run()
+        self.assertFalse(at.exception, f"Gặp ngoại lệ khi render Quản lý Phòng ở: {[e.value for e in at.exception]}")
+
+    def test_update_room_business_logic(self):
+        """Kiểm tra logic update_room chặn hạ sức chứa dưới số người đang ở."""
+        from modules.room_management import update_room
+        # Phòng A101 có 2 người đang ở (SV001, SV002)
+        # Hạ sức chứa xuống 1 người phải bị chặn
+        ok, msg = update_room("A101", "Phòng 1 người", 500000, 1)
+        self.assertFalse(ok)
+        self.assertIn("nhỏ hơn số sinh viên đang ở", msg)
+
+    def test_add_room_reset_fields_no_instantiation_error(self):
+        """Kiểm tra logic reset_add_room_fields không gây lỗi StreamlitWidgetAlreadyInstantiatedError."""
+        import streamlit as st
+        st.session_state["reset_add_room_fields"] = True
+        st.session_state["add_room_so"] = "B308"
+
+        if st.session_state.get("reset_add_room_fields"):
+            st.session_state["add_room_so"] = ""
+            st.session_state["reset_add_room_fields"] = False
+
+        self.assertEqual(st.session_state["add_room_so"], "")
+        self.assertFalse(st.session_state["reset_add_room_fields"])
+
 
 if __name__ == "__main__":
     unittest.main()
