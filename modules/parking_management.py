@@ -21,6 +21,21 @@ from modules.ui_helpers import (
 )
 
 
+def get_don_gia_dv(ma_dv: str, fallback: float = 0.0) -> float:
+    """Lấy đơn giá dịch vụ từ DB theo mã dịch vụ.
+
+    Dùng để đồng bộ giá xe vãng lai (DV02) với bảng dich_vu,
+    tránh hardcode khi admin cập nhật đơn giá.
+    """
+    df = db.fetch_df(
+        "SELECT don_gia FROM dich_vu WHERE ma_dv = %s LIMIT 1;",
+        (ma_dv.strip(),),
+    )
+    if df.empty:
+        return fallback
+    return float(df.iloc[0]["don_gia"])
+
+
 def get_monthly_tickets(only_active: bool = False) -> pd.DataFrame:
     """Truy van danh sach ve xe thang ket hop thong tin sinh vien tu bang sinh_vien.
 
@@ -528,6 +543,8 @@ def render_tab3_visitor_vehicles() -> None:
         "hoặc sinh viên) được thu tiền mặt trực tiếp theo từng lượt tại bốt bảo vệ và KHÔNG lưu vào CSDL."
     )
 
+    don_gia_vang_lai = int(get_don_gia_dv("DV02", fallback=3000.0))
+
     c_left, c_right = st.columns([1, 1])
 
     with c_left:
@@ -544,7 +561,7 @@ def render_tab3_visitor_vehicles() -> None:
         )
         st.text_input(
             "Đơn giá lượt (đồng bộ mã DV02):",
-            value="3.000 VNĐ / lượt",
+            value=f"{format_vnd(don_gia_vang_lai)} / lượt",
             disabled=True,
         )
 
@@ -559,11 +576,10 @@ def render_tab3_visitor_vehicles() -> None:
             "Số tiền khách đưa (VNĐ)",
             min_value=0,
             step=1000,
-            value=3000,
+            value=don_gia_vang_lai,
             key="tab3_tien_khach",
         )
 
-    don_gia_vang_lai = 3000
     tong_tien = so_luong * don_gia_vang_lai
     tien_thoi = tien_khach - tong_tien
 
