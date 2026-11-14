@@ -40,6 +40,43 @@ def get_date_bounds(thang: int, nam: int) -> tuple[str, str]:
     return dau_thang, dau_thang_sau
 
 
+def sync_report_period(thang: int, nam: int) -> tuple[datetime.date, datetime.date]:
+    """Đồng bộ kỳ làm việc từ sidebar vào session state cho các bộ chọn ngày.
+
+    Tự động tính ngày đầu tháng và ngày cuối tháng theo lịch chuẩn (bao gồm năm nhuận).
+    Khi phát hiện đổi kỳ (hoặc lần chạy đầu), gán trực tiếp vào st.session_state cho các
+    key widget cn02_from, cn02_to, khach_from, khach_to trước khi widget render.
+    """
+    first_day = datetime.date(nam, thang, 1)
+    last_day_num = calendar.monthrange(nam, thang)[1]
+    last_day = datetime.date(nam, thang, last_day_num)
+
+    current_period = (thang, nam)
+    if hasattr(st, "session_state"):
+        if st.session_state.get("_last_report_period") != current_period:
+            st.session_state["_last_report_period"] = current_period
+            st.session_state["cn02_from"] = first_day
+            st.session_state["cn02_to"] = last_day
+            st.session_state["khach_from"] = first_day
+            st.session_state["khach_to"] = last_day
+
+    return first_day, last_day
+
+
+def validate_date_range(
+    tu_ngay: Optional[datetime.date], den_ngay: Optional[datetime.date]
+) -> tuple[bool, str]:
+    """Kiểm tra tính hợp lệ của khoảng thời gian Từ ngày - Đến ngày.
+
+    Trả về (is_valid, error_message).
+    """
+    if tu_ngay is None or den_ngay is None:
+        return False, "Vui lòng chọn đầy đủ cả 'Từ ngày' và 'Đến ngày'."
+    if tu_ngay > den_ngay:
+        return False, "Khoảng thời gian không hợp lệ: 'Từ ngày' phải trước hoặc cùng ngày với 'Đến ngày'."
+    return True, ""
+
+
 def get_monthly_invoices(thang: int, nam: int) -> pd.DataFrame:
     """Truy vấn tổng hợp chi phí hóa đơn tháng của tất cả sinh viên đang lưu trú.
 
@@ -711,15 +748,13 @@ def render_tab_hoa_don_thang(thang: int, nam: int) -> None:
 
 def render_tab_su_dung_dich_vu(thang: int, nam: int) -> None:
     """Giao diện: Báo cáo sử dụng dịch vụ theo kỳ với bộ lọc."""
-    first_day = datetime.date(nam, thang, 1)
-    last_day_num = calendar.monthrange(nam, thang)[1]
-    last_day = datetime.date(nam, thang, last_day_num)
+    first_day, last_day = sync_report_period(thang, nam)
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        tu_ngay = st.date_input("Từ ngày", value=first_day, key="cn02_from")
+        tu_ngay = st.date_input("Từ ngày", key="cn02_from", format="DD/MM/YYYY")
     with c2:
-        den_ngay = st.date_input("Đến ngày", value=last_day, key="cn02_to")
+        den_ngay = st.date_input("Đến ngày", key="cn02_to", format="DD/MM/YYYY")
     with c3:
         sv_opts = _get_student_options()
         sv_choice = st.selectbox(
@@ -744,6 +779,11 @@ def render_tab_su_dung_dich_vu(thang: int, nam: int) -> None:
             format_func=lambda k: loai_dv_map.get(k, k),
             key="cn02_dv",
         )
+
+    is_valid, warn_msg = validate_date_range(tu_ngay, den_ngay)
+    if not is_valid:
+        st.warning(warn_msg)
+        return
 
     df_usage = get_service_usage(tu_ngay, den_ngay, sv_choice, loai_dv_choice)
 
@@ -773,9 +813,7 @@ def render_tab_su_dung_dich_vu(thang: int, nam: int) -> None:
 
 def render_tab_khach_den_tham(thang: int, nam: int) -> None:
     """Giao diện: Thống kê khách đến thăm sinh viên trong kỳ."""
-    first_day = datetime.date(nam, thang, 1)
-    last_day_num = calendar.monthrange(nam, thang)[1]
-    last_day = datetime.date(nam, thang, last_day_num)
+    first_day, last_day = sync_report_period(thang, nam)
 
     che_do = st.radio(
         "Chế độ lọc thời gian:",
@@ -793,9 +831,14 @@ def render_tab_khach_den_tham(thang: int, nam: int) -> None:
     else:
         col_d1, col_d2 = st.columns(2)
         with col_d1:
-            tu_ngay = st.date_input("Từ ngày", value=first_day, key="khach_from")
+            tu_ngay = st.date_input("Từ ngày", key="khach_from", format="DD/MM/YYYY")
         with col_d2:
-            den_ngay = st.date_input("Đến ngày", value=last_day, key="khach_to")
+            den_ngay = st.date_input("Đến ngày", key="khach_to", format="DD/MM/YYYY")
+
+    is_valid, warn_msg = validate_date_range(tu_ngay, den_ngay)
+    if not is_valid:
+        st.warning(warn_msg)
+        return
 
     sv_opts = _get_student_options()
     sv_choice = st.selectbox(
@@ -858,6 +901,8 @@ def render_tab_doanh_thu_dich_vu(thang: int, nam: int) -> None:
 
 def render_reports(thang_sidebar: int, nam_sidebar: int) -> None:
     """Điều phối 4 Tab chức năng báo cáo và hóa đơn nghiệp vụ KTX."""
+    sync_report_period(thang_sidebar, nam_sidebar)
+
     styled_header(
         "Báo cáo & Hóa đơn",
         f"Các báo cáo nghiệp vụ tổng hợp tháng {thang_sidebar:02d}/{nam_sidebar}",
