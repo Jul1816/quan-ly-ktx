@@ -27,8 +27,39 @@ def styled_header(title: str, subtitle: Optional[str] = None) -> None:
     )
 
 
-def show_feedback(success: bool, message: str) -> None:
-    """Hiển thị thông báo kết quả thực thi an toàn."""
+def set_flash_feedback(success: bool, message: str, trigger_toast: bool = True) -> None:
+    """Lưu trữ thông báo tạm thời vào session_state để hiển thị sau st.rerun()."""
+    st.session_state["_flash_feedback"] = {
+        "success": bool(success),
+        "message": str(message),
+        "trigger_toast": bool(trigger_toast),
+    }
+
+
+def render_pending_feedback() -> None:
+    """Kiểm tra và hiển thị thông báo flash đang chờ trong session_state."""
+    feedback = st.session_state.pop("_flash_feedback", None)
+    if feedback:
+        msg = feedback.get("message", "")
+        is_success = feedback.get("success", True)
+        if feedback.get("trigger_toast", True):
+            try:
+                st.toast(msg, icon=None)
+            except Exception:
+                pass
+        if is_success:
+            st.success(msg)
+        else:
+            st.error(msg)
+
+
+def show_feedback(success: bool, message: str, use_toast: bool = True) -> None:
+    """Hiển thị thông báo kết quả thực thi an toàn kèm toast (dành cho thao tác không rerun)."""
+    if use_toast:
+        try:
+            st.toast(message, icon=None)
+        except Exception:
+            pass
     if success:
         st.success(message)
     else:

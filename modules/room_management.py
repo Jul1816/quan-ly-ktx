@@ -15,6 +15,7 @@ import db
 from modules.ui_helpers import (
     display_table,
     format_vnd,
+    set_flash_feedback,
     show_feedback,
     styled_header,
 )
@@ -587,10 +588,12 @@ def render_tab1_rooms() -> None:
                 st.warning("Vui lòng nhập tên loại phòng tùy chỉnh.")
             else:
                 ok, msg = add_new_room(final_so, final_loai, new_gia, new_chua)
-                show_feedback(ok, f"Đã thêm phòng {final_so} thành công!" if ok else msg)
                 if ok:
+                    set_flash_feedback(True, f"Đã lưu phòng mới {final_so} thành công!")
                     st.session_state["reset_add_room_fields"] = True
                     st.rerun()
+                else:
+                    show_feedback(False, msg)
 
     with st.expander("Cập nhật thông tin phòng"):
         if not df_all.empty:
@@ -655,9 +658,11 @@ def render_tab1_rooms() -> None:
                     st.warning("Vui lòng nhập tên loại phòng tùy chỉnh.")
                 else:
                     ok, msg = update_room(phong_upd, final_loai, upd_gia, upd_chua)
-                    show_feedback(ok, f"Đã cập nhật phòng {phong_upd} thành công!" if ok else msg)
                     if ok:
+                        set_flash_feedback(True, f"Đã cập nhật thông tin phòng {phong_upd} thành công!")
                         st.rerun()
+                    else:
+                        show_feedback(False, msg)
 
 
 def render_tab2_students() -> None:
@@ -692,9 +697,11 @@ def render_tab2_students() -> None:
                         st.warning("Vui lòng điền đầy đủ Mã SV, Số CMT và Họ tên.")
                     else:
                         ok, msg = add_student(ma_sv, so_cmt, ho_ten, str(ngay_sinh), lop, que_quan)
-                        show_feedback(ok, f"Đã thêm sinh viên {ma_sv} thành công!" if ok else msg)
                         if ok:
+                            set_flash_feedback(True, f"Đã thêm sinh viên {ma_sv} - {ho_ten} thành công!")
                             st.rerun()
+                        else:
+                            show_feedback(False, msg)
 
         with st.expander("Cập nhật thông tin sinh viên"):
             if all_sv.empty:
@@ -729,9 +736,11 @@ def render_tab2_students() -> None:
                     btn_upd_sv = st.form_submit_button("Lưu thay đổi", width="stretch")
                     if btn_upd_sv:
                         ok, msg = update_student(sel_ma, upd_cmt, upd_ten, str(upd_dob), upd_lop, upd_que)
-                        show_feedback(ok, f"Đã cập nhật sinh viên {sel_ma} thành công!" if ok else msg)
                         if ok:
+                            set_flash_feedback(True, f"Đã lưu thay đổi sinh viên {sel_ma} thành công!")
                             st.rerun()
+                        else:
+                            show_feedback(False, msg)
 
         with st.expander("Xóa hồ sơ sinh viên"):
             if all_sv.empty:
@@ -752,9 +761,11 @@ def render_tab2_students() -> None:
                             st.error("Vui lòng đánh dấu xác nhận trước khi thực hiện xóa.")
                         else:
                             ok, msg = delete_student(sel_del_ma)
-                            show_feedback(ok, f"Đã xóa thành công sinh viên {sel_del_ma}!" if ok else msg)
                             if ok:
+                                set_flash_feedback(True, f"Đã xóa sinh viên {sel_del_ma} thành công!")
                                 st.rerun()
+                            else:
+                                show_feedback(False, msg)
 
     with sub_360:
         if all_sv.empty:
@@ -880,9 +891,11 @@ def render_tab3_checkin() -> None:
     btn_checkin = st.button("Xác nhận Tiếp nhận & Xếp phòng", width="stretch", key="tab3_btn_checkin")
     if btn_checkin:
         ok, msg = checkin_student(chosen_ma_sv, chosen_so_phong, str(ngay_vao), don_gia_ap_dung)
-        show_feedback(ok, f"Đã tiếp nhận thành công sinh viên {chosen_ma_sv} vào phòng {chosen_so_phong}!" if ok else msg)
         if ok:
+            set_flash_feedback(True, f"Đã tiếp nhận sinh viên {chosen_ma_sv} vào phòng {chosen_so_phong} thành công!")
             st.rerun()
+        else:
+            show_feedback(False, msg)
 
     st.markdown("<hr style='margin: 25px 0 15px 0;'>", unsafe_allow_html=True)
     active_stays = get_active_stays()
@@ -939,14 +952,14 @@ def render_tab4_checkout_transfer() -> None:
             btn_checkout = st.button("Tôi chắc chắn muốn Trả phòng", type="primary", width="stretch", key="tab4_btn_checkout")
             if btn_checkout:
                 ok, msg = checkout_student(target_stay["ma_o"], str(ngay_ra), str(target_stay["ngay_vao"]))
-                show_feedback(
-                    ok,
-                    f"Đã hoàn tất trả phòng {target_stay['so_phong']} cho sinh viên {target_stay['ma_sv']}."
-                    if ok
-                    else msg,
-                )
                 if ok:
+                    set_flash_feedback(
+                        True,
+                        f"Đã hoàn tất trả phòng {target_stay['so_phong']} cho sinh viên {target_stay['ma_sv']} thành công!",
+                    )
                     st.rerun()
+                else:
+                    show_feedback(False, msg)
 
     with tab_tr:
         st.markdown("**Chuyển phòng lưu trú an toàn**")
@@ -1005,14 +1018,14 @@ def render_tab4_checkout_transfer() -> None:
                     str(chosen_tr_stay["ngay_vao"]),
                     don_gia_new,
                 )
-                show_feedback(
-                    ok,
-                    f"Chuyển phòng thành công! Sinh viên {chosen_tr_stay['ma_sv']} đã được chuyển sang phòng {new_so_phong}."
-                    if ok
-                    else msg,
-                )
                 if ok:
+                    set_flash_feedback(
+                        True,
+                        f"Đã chuyển sinh viên {chosen_tr_stay['ma_sv']} sang phòng {new_so_phong} thành công!",
+                    )
                     st.rerun()
+                else:
+                    show_feedback(False, msg)
 
 
 def render_room_management() -> None:

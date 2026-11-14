@@ -13,6 +13,7 @@ from modules.trigger_validation import render_trigger_validation
 from modules.room_management import render_room_management
 from modules.parking_management import render_parking_management
 from modules.service_guest_management import render_service_guest_management
+from modules.ui_helpers import render_pending_feedback
 import db
 
 st.set_page_config(
@@ -101,6 +102,8 @@ with st.sidebar:
         st.caption(f"CSDL đã kết nối: `{db_name}`")
     except Exception as ex:
         st.error(f"Mất kết nối CSDL: {ex}")
+
+render_pending_feedback()
 
 if lua_chon_menu == "Tổng quan":
     render_dashboard(thang_chon, nam_chon)

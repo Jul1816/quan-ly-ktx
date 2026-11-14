@@ -784,6 +784,130 @@ render_trigger_validation()
         self.assertEqual(st.session_state["add_room_so"], "")
         self.assertFalse(st.session_state["reset_add_room_fields"])
 
+    def test_sync_report_period_and_date_validation(self):
+        """Kiểm tra logic tính ngày, đồng bộ session_state và kiểm định khoảng ngày."""
+        from modules.reports import sync_report_period, validate_date_range
+        import datetime
+
+        # 1. Kiểm tra validation
+        valid, msg = validate_date_range(datetime.date(2026, 10, 1), datetime.date(2026, 10, 31))
+        self.assertTrue(valid)
+        self.assertEqual(msg, "")
+
+        # Kiểm tra trường hợp None
+        none_valid, none_msg = validate_date_range(None, datetime.date(2026, 10, 31))
+        self.assertFalse(none_valid)
+        self.assertIn("Vui lòng chọn đầy đủ", none_msg)
+
+        none_valid2, none_msg2 = validate_date_range(datetime.date(2026, 10, 1), None)
+        self.assertFalse(none_valid2)
+        self.assertIn("Vui lòng chọn đầy đủ", none_msg2)
+
+        # Kiểm tra ngày đảo ngược (Từ ngày > Đến ngày)
+        invalid, err_msg = validate_date_range(datetime.date(2026, 10, 31), datetime.date(2026, 10, 1))
+        self.assertFalse(invalid)
+        self.assertIn("Khoảng thời gian không hợp lệ", err_msg)
+
+        # 2. Kiểm tra tính toán ngày trong tháng nhuận và thông thường
+        first_d, last_d = sync_report_period(2, 2024)
+        self.assertEqual(first_d, datetime.date(2024, 2, 1))
+        self.assertEqual(last_d, datetime.date(2024, 2, 29))
+
+        first_d2, last_d2 = sync_report_period(10, 2026)
+        self.assertEqual(first_d2, datetime.date(2026, 10, 1))
+        self.assertEqual(last_d2, datetime.date(2026, 10, 31))
+
+    def test_report_period_sync_ui_integration(self):
+        """Kiểm tra tích hợp AppTest: đồng bộ kỳ làm việc sidebar sang widget date_input."""
+        from streamlit.testing.v1 import AppTest
+        import datetime
+
+        at = AppTest.from_file(str(self.app_path), default_timeout=20)
+        at.run()
+        at.sidebar.radio[0].set_value("Báo cáo & Hóa đơn").run()
+        self.assertFalse(at.exception, f"Gặp lỗi khi chọn menu Báo cáo: {[e.value for e in at.exception]}")
+
+        # Mặc định kỳ là Tháng 10/2026
+        self.assertEqual(at.date_input(key="cn02_from").value, datetime.date(2026, 10, 1))
+        self.assertEqual(at.date_input(key="cn02_to").value, datetime.date(2026, 10, 31))
+
+        # Đổi tháng sang Tháng 11 trên sidebar
+        at.sidebar.selectbox[0].set_value(11).run()
+        self.assertFalse(at.exception, f"Gặp lỗi khi đổi tháng: {[e.value for e in at.exception]}")
+
+        # Kiểm tra date_input được đồng bộ chính xác sang kỳ mới
+        self.assertEqual(at.date_input(key="cn02_from").value, datetime.date(2026, 11, 1))
+        self.assertEqual(at.date_input(key="cn02_to").value, datetime.date(2026, 11, 30))
+
+    def test_flash_notification_helpers(self):
+        """Kiểm tra logic set_flash_feedback và render_pending_feedback đảm bảo tính nguyên tử."""
+        import streamlit as st
+        from modules.ui_helpers import set_flash_feedback, render_pending_feedback
+
+        # Đảm bảo session_state sạch
+        st.session_state.pop("_flash_feedback", None)
+
+        # 1. Gọi khi không có feedback: không phát sinh lỗi
+        render_pending_feedback()
+        self.assertIsNone(st.session_state.get("_flash_feedback"))
+
+        # 2. Gán flash feedback thành công
+        set_flash_feedback(True, "Đã lưu phòng mới A109 thành công!", trigger_toast=True)
+        self.assertIn("_flash_feedback", st.session_state)
+        stored = st.session_state["_flash_feedback"]
+        self.assertTrue(stored["success"])
+        self.assertEqual(stored["message"], "Đã lưu phòng mới A109 thành công!")
+        self.assertTrue(stored["trigger_toast"])
+
+        # 3. Sau khi pop trong render_pending_feedback, session_state phải được xóa sạch
+        render_pending_feedback()
+        self.assertNotIn("_flash_feedback", st.session_state)
+
+    def test_flash_notification_apptest_integration(self):
+        """Kiểm tra tích hợp AppTest: thông báo flash được hiển thị và xóa sạch sau render."""
+        from streamlit.testing.v1 import AppTest
+
+        at = AppTest.from_file(str(self.app_path), default_timeout=20)
+        at.run()
+        self.assertFalse(at.exception)
+
+        # Mô phỏng thao tác vừa nạp flash feedback trước khi rerun
+        test_msg = "Đã lưu phòng mới VIP999 thành công!"
+        at.session_state["_flash_feedback"] = {
+            "success": True,
+            "message": test_msg,
+            "trigger_toast": True,
+        }
+        at.run()
+
+        self.assertFalse(at.exception)
+        # Kiểm tra hiển thị banner success
+        self.assertTrue(any(test_msg in s.value for s in at.success))
+        # Kiểm tra session_state đã được pop giải phóng
+        self.assertNotIn("_flash_feedback", at.session_state)
+
+    def test_report_period_reversed_dates_warning(self):
+        """Kiểm tra cảnh báo khi chọn ngày đảo ngược (Từ ngày > Đến ngày) trong UI."""
+        from streamlit.testing.v1 import AppTest
+        import datetime
+
+        at = AppTest.from_file(str(self.app_path), default_timeout=20)
+        at.run()
+        at.sidebar.radio[0].set_value("Báo cáo & Hóa đơn").run()
+        self.assertFalse(at.exception)
+
+        # Chuyển sang ngày đảo ngược: Từ ngày = 2026-10-31, Đến ngày = 2026-10-01
+        at.date_input(key="cn02_from").set_value(datetime.date(2026, 10, 31)).run()
+        at.date_input(key="cn02_to").set_value(datetime.date(2026, 10, 1)).run()
+        self.assertFalse(at.exception)
+
+        # Kiểm tra có st.warning hiển thị nội dung cảnh báo
+        warnings = [w.value for w in at.warning]
+        self.assertTrue(
+            any("Khoảng thời gian không hợp lệ" in w for w in warnings),
+            f"Không tìm thấy cảnh báo khoảng thời gian không hợp lệ: {warnings}",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

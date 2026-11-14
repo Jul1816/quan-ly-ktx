@@ -19,6 +19,7 @@ from modules.ui_helpers import (
     display_table,
     format_vnd,
     render_export_buttons,
+    set_flash_feedback,
     show_feedback,
     styled_header,
 )
@@ -442,9 +443,14 @@ def render_tab1_services() -> None:
             so_luong=int(so_luong),
             don_gia_ap_dung=Decimal(str(don_gia_niem_yet)),
         )
-        show_feedback(suc, msg)
         if suc:
+            set_flash_feedback(
+                True,
+                f"Đã lưu lượt dùng dịch vụ {sel_ma_dv} cho sinh viên {sel_ma_sv} thành công!",
+            )
             st.rerun()
+        else:
+            show_feedback(False, msg)
 
     st.markdown("---")
 
@@ -476,9 +482,14 @@ def render_tab1_services() -> None:
                     loai_dv=new_loai_dv,
                     don_gia=Decimal(str(new_don_gia)),
                 )
-                show_feedback(suc, msg)
                 if suc:
+                    set_flash_feedback(
+                        True,
+                        f"Đã thêm dịch vụ {new_ten_dv.strip()} thành công!",
+                    )
                     st.rerun()
+                else:
+                    show_feedback(False, msg)
 
         with col_upd_dv:
             st.markdown("**Cập nhật đơn giá niêm yết**")
@@ -500,9 +511,15 @@ def render_tab1_services() -> None:
                 btn_upd_price = st.button("Cập nhật đơn giá", width="stretch", key="tab1_btn_upd_price")
                 if btn_upd_price:
                     suc, msg = update_service_price(sel_upd_dv, Decimal(str(upd_don_gia)))
-                    show_feedback(suc, msg)
                     if suc:
+                        dv_name = service_dict.get(sel_upd_dv, sel_upd_dv)
+                        set_flash_feedback(
+                            True,
+                            f"Đã cập nhật đơn giá dịch vụ {dv_name} thành công!",
+                        )
                         st.rerun()
+                    else:
+                        show_feedback(False, msg)
             else:
                 st.info("Chưa có dịch vụ nào để cập nhật.")
 
@@ -678,9 +695,9 @@ def render_tab2_guest_book() -> None:
         clean_cmt = so_cmt_val.strip() if so_cmt_val else ""
         clean_ten = ten_khach_val.strip() if ten_khach_val else ""
         if not clean_cmt:
-            st.error("Lỗi: Số CMT / CCCD của khách không được để trống.")
+            show_feedback(False, "Lỗi: Số CMT / CCCD của khách không được để trống.")
         elif not clean_ten:
-            st.error("Lỗi: Họ tên khách đến thăm không được để trống.")
+            show_feedback(False, "Lỗi: Họ tên khách đến thăm không được để trống.")
         else:
             tg_den = datetime.datetime.combine(d_den, t_den)
             suc, msg = record_guest_visit(
@@ -691,11 +708,16 @@ def render_tab2_guest_book() -> None:
                 ngay_den=tg_den,
             )
             if not suc and ("đúng thời điểm" in msg or "uq_khach_sv_ngay_den" in msg or "Duplicate entry" in msg):
-                st.error("Khách này đã được ghi nhận đến thăm cùng sinh viên vào thời điểm này.")
+                show_feedback(False, "Khách này đã được ghi nhận đến thăm cùng sinh viên vào thời điểm này.")
             else:
-                show_feedback(suc, msg)
                 if suc:
+                    set_flash_feedback(
+                        True,
+                        f"Đã ghi nhận khách {clean_ten} vào thăm thành công!",
+                    )
                     st.rerun()
+                else:
+                    show_feedback(False, msg)
 
     st.markdown("---")
 

@@ -16,6 +16,7 @@ import db
 from modules.ui_helpers import (
     display_table,
     format_vnd,
+    set_flash_feedback,
     show_feedback,
     styled_header,
 )
@@ -340,12 +341,14 @@ def render_tab1_monthly_tickets() -> None:
                         ngay_dang_ky=reg_ngay_dk,
                     )
                     if ok:
-                        st.success(
-                            f"Đăng ký vé xe tháng thành công cho biển số {reg_bien_so.strip().upper()}!"
+                        clean_bs = reg_bien_so.strip().upper()
+                        set_flash_feedback(
+                            True,
+                            f"Đã đăng ký vé tháng cho xe {clean_bs} thành công!",
                         )
                         st.rerun()
                     else:
-                        st.error(f"Lỗi: {msg}")
+                        show_feedback(False, f"Lỗi: {msg}")
 
     with col_cancel:
         st.markdown("**Hủy vé xe tháng**")
@@ -403,12 +406,13 @@ def render_tab1_monthly_tickets() -> None:
                             ngay_huy=cancel_date,
                         )
                         if ok:
-                            st.success(
-                                f"Đã hủy vé xe tháng cho biển số {sel_bien_so} thành công!"
+                            set_flash_feedback(
+                                True,
+                                f"Đã hủy vé tháng cho xe {sel_bien_so} thành công!",
                             )
                             st.rerun()
                         else:
-                            st.error(f"Lỗi: {msg}")
+                            show_feedback(False, f"Lỗi: {msg}")
 
 
 def render_tab2_parking_turns() -> None:
@@ -476,21 +480,28 @@ def render_tab2_parking_turns() -> None:
             else:
                 ok, msg, fee, turn = record_parking_turn(clean_bs, tg_gui, tg_lay)
                 if ok:
+                    try:
+                        st.toast(
+                            f"Đã ghi nhận lượt gửi/lấy xe {clean_bs} thành công!",
+                            icon=None,
+                        )
+                    except Exception:
+                        pass
                     if fee == 0 or fee == Decimal("0.00"):
                         st.success(
-                            f"Ghi nhận thành công! Đây là lượt thứ {turn} trong ngày -> Miễn phí (0 VNĐ)."
+                            f"Đã ghi nhận lượt gửi/lấy xe {clean_bs} thành công! Đây là lượt thứ {turn} trong ngày -> Miễn phí (0 VNĐ)."
                         )
                     elif fee == 3000 or fee == Decimal("3000.00"):
                         st.warning(
-                            f"Ghi nhận thành công! Đây là lượt thứ {turn} trong ngày (vượt quá 2 lượt miễn phí/ngày) "
+                            f"Đã ghi nhận lượt gửi/lấy xe {clean_bs} thành công! Đây là lượt thứ {turn} trong ngày (vượt quá 2 lượt miễn phí/ngày) "
                             "-> Trigger đã tự động áp mức phụ thu: 3.000 VNĐ."
                         )
                     else:
                         st.info(
-                            f"Ghi nhận thành công! Đây là lượt thứ {turn} trong ngày. Số tiền phải trả: {format_vnd(fee)}"
+                            f"Đã ghi nhận lượt gửi/lấy xe {clean_bs} thành công! Đây là lượt thứ {turn} trong ngày. Số tiền phải trả: {format_vnd(fee)}"
                         )
                 else:
-                    st.error(f"Lỗi: {msg}")
+                    show_feedback(False, f"Lỗi: {msg}")
 
     st.markdown("---")
 
