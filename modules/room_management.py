@@ -259,7 +259,7 @@ def delete_student(ma_sv: str) -> tuple[bool, str]:
     """
     sv_id = ma_sv.strip()
 
-    # --- Pre-flight: kiểm tra đang ở phòng ---
+    # Pre-flight: kiểm tra sinh viên đang ở phòng
     df_active_room = db.fetch_df(
         "SELECT so_phong FROM lich_su_o_phong WHERE ma_sv = %s AND ngay_ra IS NULL LIMIT 1;",
         (sv_id,),
@@ -268,7 +268,7 @@ def delete_student(ma_sv: str) -> tuple[bool, str]:
         phong = df_active_room.iloc[0]["so_phong"]
         return False, f"Không thể xóa sinh viên {sv_id}: Sinh viên đang ở phòng {phong}. Vui lòng trả phòng trước."
 
-    # --- Pre-flight: kiểm tra xe vé tháng còn hiệu lực ---
+    # Pre-flight: kiểm tra xe vé tháng còn hiệu lực
     df_active_xe = db.fetch_df(
         "SELECT bien_so FROM xe_ve_thang WHERE ma_sv = %s AND ngay_huy IS NULL LIMIT 1;",
         (sv_id,),
@@ -277,7 +277,7 @@ def delete_student(ma_sv: str) -> tuple[bool, str]:
         bien_so = df_active_xe.iloc[0]["bien_so"]
         return False, f"Không thể xóa sinh viên {sv_id}: Xe {bien_so} vẫn còn vé tháng hiệu lực. Vui lòng hủy vé trước."
 
-    # --- Xóa cascade lịch sử theo thứ tự FK rồi xóa sinh viên ---
+    # Xóa cascade lịch sử theo thứ tự khóa ngoại trước khi xóa sinh viên
     operations = [
         # luot_gui_lay_xe FK → xe_ve_thang (phải xóa trước xe_ve_thang)
         ("DELETE lgx FROM luot_gui_lay_xe lgx JOIN xe_ve_thang x ON lgx.bien_so = x.bien_so WHERE x.ma_sv = %s;", (sv_id,)),

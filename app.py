@@ -2,14 +2,13 @@
 
 File chạy chính của ứng dụng:
 - Cấu hình giao diện Streamlit layout wide.
-- Thanh Sidebar: Chọn Kỳ làm việc (Tháng/Năm) và Menu điều hướng 6 phân khu.
+- Thanh Sidebar: Chọn Kỳ làm việc (Tháng/Năm) và Menu điều hướng 5 phân khu.
 - Màn hình khởi đầu: Tổng quan Vận hành.
 """
 
 import streamlit as st
 from modules.dashboard import render_dashboard
 from modules.reports import render_reports
-from modules.trigger_validation import render_trigger_validation
 from modules.room_management import render_room_management
 from modules.parking_management import render_parking_management
 from modules.service_guest_management import render_service_guest_management
@@ -81,7 +80,6 @@ with st.sidebar:
     menu_options = [
         "Tổng quan",
         "Báo cáo & Hóa đơn",
-        "Kiểm chứng Ràng buộc",
         "Quản lý Phòng ở",
         "Quản lý Bãi giữ xe",
         "Dịch vụ & Khách thăm",
@@ -110,9 +108,6 @@ if lua_chon_menu == "Tổng quan":
 
 elif lua_chon_menu == "Báo cáo & Hóa đơn":
     render_reports(thang_chon, nam_chon)
-
-elif lua_chon_menu == "Kiểm chứng Ràng buộc":
-    render_trigger_validation()
 
 elif lua_chon_menu == "Quản lý Phòng ở":
     render_room_management()
