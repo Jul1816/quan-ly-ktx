@@ -7,7 +7,7 @@ Hiển thị 4 thẻ chỉ số KPI vận hành theo Tháng/Năm được chọn
 4. Tổng doanh thu tháng (tính theo đúng công thức CTE của TRUY VẤN 1)
 
 Kèm theo 2 bảng dữ liệu:
-- Danh sách trạng thái lấp đầy của các phòng (có highlight cảnh báo phòng đầy 100%)
+- Danh sách trạng thái của các phòng (có highlight cảnh báo khi phòng đã đầy)
 - Danh sách sinh viên đang lưu trú hiện tại
 """
 
@@ -173,15 +173,12 @@ def render_dashboard(thang: int, nam: int):
     st.divider()
 
     tab1, tab2 = st.tabs([
-        "Trạng thái lấp đầy các phòng",
+        "Trạng thái các phòng",
         "Danh sách sinh viên đang lưu trú",
     ])
 
     with tab1:
-        st.subheader("Trạng thái lấp đầy từng phòng ở")
-        st.caption(
-            "Cột trạng thái hiển thị tỷ lệ lấp đầy. Các phòng đã kín chỗ (100%) được gắn cảnh báo để tránh xếp trùng."
-        )
+        st.subheader("Trạng thái từng phòng ở")
 
         q_rooms = """
             SELECT 
@@ -205,7 +202,7 @@ def render_dashboard(thang: int, nam: int):
         if not df_rooms.empty:
             def danh_gia_trang_thai(row):
                 if row["con_trong"] == 0:
-                    return "ĐÃ ĐẦY (100%)"
+                    return "ĐÃ ĐẦY"
                 return f"Còn {int(row['con_trong'])} chỗ"
 
             df_rooms["trang_thai"] = df_rooms.apply(danh_gia_trang_thai, axis=1)
@@ -217,7 +214,6 @@ def render_dashboard(thang: int, nam: int):
                 "dang_o",
                 "so_nguoi_toi_da",
                 "con_trong",
-                "ty_le_lap_day",
                 "trang_thai",
             ]].copy()
 
@@ -228,7 +224,6 @@ def render_dashboard(thang: int, nam: int):
                 "Đang ở",
                 "Sức chứa",
                 "Chỗ trống",
-                "Tỷ lệ lấp đầy (%)",
                 "Tình trạng",
             ]
 
@@ -239,7 +234,6 @@ def render_dashboard(thang: int, nam: int):
 
             styled_rooms = df_display_rooms.style.apply(highlight_full_room, axis=1).format({
                 "Đơn giá tháng (VNĐ)": "{:,.0f}".format,
-                "Tỷ lệ lấp đầy (%)": "{:.1f}%".format,
             })
 
             st.dataframe(styled_rooms, width="stretch", hide_index=True)

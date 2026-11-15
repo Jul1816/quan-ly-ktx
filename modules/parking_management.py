@@ -420,11 +420,11 @@ def render_tab2_parking_turns() -> None:
     st.markdown("**Ghi nhận lượt xe ra / vào bãi**")
     st.caption(
         "Chính sách bãi xe: Miễn phí 2 lượt gửi/lấy đầu tiên trong ngày. "
-        "Từ lượt thứ 3 trong cùng ngày, hệ thống tự động áp phụ thu 3.000 VNĐ/lượt (Trigger trg_luot_xe_insert)."
+        "Từ lượt thứ 3 trong cùng ngày, hệ thống tự động áp phụ thu 3.000 VNĐ/lượt."
     )
 
     chk_manual = st.checkbox(
-        "Nhập biển số thủ công (kiểm thử)",
+        "Nhập biển số thủ công",
         value=False,
         key="tab2_chk_manual",
         help="Đánh dấu để nhập biển số bất kỳ phục vụ kiểm thử lỗi xe chưa đăng ký hoặc hết hạn.",
@@ -432,9 +432,9 @@ def render_tab2_parking_turns() -> None:
 
     if chk_manual:
         bien_so_val = st.text_input(
-            "Nhập biển số kiểm thử (ví dụ: 99Z-99999):",
+            "Nhập biển số (ví dụ: 99Z-99999):",
             key="tab2_txt_bien_so",
-            placeholder="Nhập biển số xe kiểm thử…",
+            placeholder="Nhập biển số xe…",
         )
     else:
         df_active = get_monthly_tickets(only_active=True)
@@ -494,7 +494,7 @@ def render_tab2_parking_turns() -> None:
                     elif fee == 3000 or fee == Decimal("3000.00"):
                         st.warning(
                             f"Đã ghi nhận lượt gửi/lấy xe {clean_bs} thành công! Đây là lượt thứ {turn} trong ngày (vượt quá 2 lượt miễn phí/ngày) "
-                            "-> Trigger đã tự động áp mức phụ thu: 3.000 VNĐ."
+                            "-> Hệ thống đã tự động áp mức phụ thu: 3.000 VNĐ."
                         )
                     else:
                         st.info(
@@ -550,8 +550,8 @@ def render_tab2_parking_turns() -> None:
 def render_tab3_visitor_vehicles() -> None:
     """Tab 3: Tiện ích tính tiền xe vãng lai tại cổng."""
     st.info(
-        "Theo quy định nghiệp vụ KTX, các xe không đăng ký vé tháng (xe vãng lai của khách "
-        "hoặc sinh viên) được thu tiền mặt trực tiếp theo từng lượt tại bốt bảo vệ và KHÔNG lưu vào CSDL."
+        "Chính sách bãi xe: các xe không đăng ký vé tháng (xe vãng lai của khách "
+        "hoặc sinh viên) được thu tiền mặt trực tiếp theo từng lượt tại bốt bảo vệ."
     )
 
     don_gia_vang_lai = int(get_don_gia_dv("DV02", fallback=3000.0))

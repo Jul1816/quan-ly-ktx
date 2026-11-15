@@ -445,7 +445,7 @@ def transfer_student_room(
 
 
 def render_tab1_rooms() -> None:
-    """Giao diện Tab 1: Tra cứu danh mục phòng, tỷ lệ lấp đầy và quản lý phòng."""
+    """Giao diện Tab 1: Tra cứu danh mục phòng và quản lý phòng."""
     st.markdown("**Danh mục phòng và tình trạng lưu trú hiện tại**")
 
     df_all = get_room_occupancy_list(only_available=False)
@@ -476,7 +476,6 @@ def render_tab1_rooms() -> None:
             "so_nguoi_toi_da",
             "so_nguoi_dang_o",
             "so_cho_trong",
-            "ty_le_lap_day",
             "trang_thai_cho",
         ]]
         df_show.columns = [
@@ -486,10 +485,9 @@ def render_tab1_rooms() -> None:
             "Sức chứa",
             "Đang ở",
             "Còn trống",
-            "Tỷ lệ lấp đầy",
             "Trạng thái",
         ]
-        display_table(df_show, title="Bảng thống kê tỷ lệ lấp đầy từng phòng")
+        display_table(df_show, title="Bảng thống kê từng phòng.")
 
     with st.expander("Chi tiết sinh viên đang lưu trú trong phòng"):
         if df_all.empty:
@@ -844,10 +842,6 @@ def render_tab2_students() -> None:
 def render_tab3_checkin() -> None:
     """Giao diện Tab 3: Tiếp nhận và xếp phòng sinh viên."""
     st.markdown("**Tiếp nhận sinh viên vào ở phòng ký túc xá**")
-    st.caption(
-        "Quy định nghiệp vụ: Sinh viên chỉ được ở 1 phòng trong cùng một khoảng thời gian. "
-        "Trigger trg_phong_insert sẽ tự động kiểm tra và chặn nếu phòng đã đủ số người tối đa hoặc sinh viên bị trùng lịch ở."
-    )
 
     sv_options = get_student_options_for_checkin()
     room_options = get_room_options_for_checkin()
@@ -927,7 +921,7 @@ def render_tab4_checkout_transfer() -> None:
         st.info("Hiện không có sinh viên nào đang lưu trú trong ký túc xá.")
         return
 
-    tab_out, tab_tr = st.tabs(["Nghiệp vụ Trả phòng", "Nghiệp vụ Chuyển phòng"])
+    tab_out, tab_tr = st.tabs(["Trả phòng", "Chuyển phòng"])
 
     stay_labels = [
         f"{s['so_phong']} - {s['ma_sv']} ({s['ho_ten']}) - Ngày vào: {s['ngay_vao']}"
