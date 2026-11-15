@@ -122,7 +122,7 @@ BEGIN
       AND NEW.ngay_vao <= COALESCE(l.ngay_ra, '9999-12-31')
   ) THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Loi: Sinh vien da co lich su o phong trung khoang thoi gian nay';
+      SET MESSAGE_TEXT = 'Lỗi: Sinh viên đã có lịch sử ở phòng trong khoảng thời gian này';
   END IF;
 
   -- Kiểm tra sức chứa tối đa của phòng trong khoảng thời gian giao nhau
@@ -136,7 +136,7 @@ BEGIN
 
   IF v_dang_o >= v_suc_chua THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Loi: Phong da du so nguoi toi da, khong the xep them sinh vien';
+      SET MESSAGE_TEXT = 'Lỗi: Phòng đã đủ số người tối đa, không thể xếp thêm sinh viên';
   END IF;
 END$$
 
@@ -154,7 +154,7 @@ BEGIN
       AND NEW.ngay_vao <= COALESCE(l.ngay_ra, '9999-12-31')
   ) THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Loi cap nhat: Sinh vien bi trung thoi gian o phong';
+      SET MESSAGE_TEXT = 'Lỗi cập nhật: Sinh viên đã có lịch sử ở phòng trong khoảng thời gian này';
   END IF;
 
   SELECT so_nguoi_toi_da INTO v_suc_chua FROM phong WHERE so_phong = NEW.so_phong;
@@ -168,7 +168,7 @@ BEGIN
 
   IF v_dang_o >= v_suc_chua THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Loi cap nhat: Phong da du so nguoi toi da';
+      SET MESSAGE_TEXT = 'Lỗi cập nhật: Phòng đã đủ số người tối đa';
   END IF;
 END$$
 
@@ -186,7 +186,7 @@ BEGIN
 
   IF v_so_xe >= 2 THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Loi: Moi sinh vien chi duoc dang ky toi da 2 xe ve thang cung thoi diem';
+      SET MESSAGE_TEXT = 'Lỗi: Mỗi sinh viên chỉ được đăng ký tối đa 2 xe vé tháng cùng thời điểm';
   END IF;
 END$$
 
@@ -204,7 +204,7 @@ BEGIN
 
   IF v_so_xe >= 2 THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Loi cap nhat: Sinh vien vuot qua gioi han 2 xe ve thang cung thoi diem';
+      SET MESSAGE_TEXT = 'Lỗi cập nhật: Sinh viên vượt quá giới hạn 2 xe vé tháng cùng thời điểm';
   END IF;
 END$$
 
@@ -225,7 +225,7 @@ BEGIN
       AND (x.ngay_huy IS NULL OR DATE(NEW.thoi_gian_gui) <= x.ngay_huy)
   ) THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Loi: Xe chua dang ky hoac ve thang khong con hieu luc tai ngay gui';
+      SET MESSAGE_TEXT = 'Lỗi: Xe chưa đăng ký hoặc vé tháng không còn hiệu lực tại ngày gửi';
   END IF;
 
   -- Truy vấn DATETIME trong ngày để tận dụng index
@@ -460,21 +460,21 @@ ORDER BY ma_luot;
 -- 5.2. Kịch bản kiểm thử trigger chặn vi phạm (bỏ comment từng câu lệnh để chạy kiểm thử):
 
 -- [Test 1]: Xếp SV006 vào phòng A102 đã đầy (2/2 người)
--- Kỳ vọng: Lỗi phòng đã đủ số người tối đa
+-- Kỳ vọng: Lỗi: Phòng đã đủ số người tối đa, không thể xếp thêm sinh viên
 -- INSERT INTO lich_su_o_phong (ma_sv, so_phong, ngay_vao, ngay_ra, don_gia_ap_dung)
 -- VALUES ('SV006', 'A102', '2026-10-25', NULL, 650000);
 
 -- [Test 2]: Xếp SV002 sang phòng B201 trùng khoảng thời gian đang ở A101
--- Kỳ vọng: Lỗi sinh viên đã có lịch sử ở phòng trùng khoảng thời gian
+-- Kỳ vọng: Lỗi: Sinh viên đã có lịch sử ở phòng trong khoảng thời gian này
 -- INSERT INTO lich_su_o_phong (ma_sv, so_phong, ngay_vao, ngay_ra, don_gia_ap_dung)
 -- VALUES ('SV002', 'B201', '2026-10-20', NULL, 300000);
 
 -- [Test 3]: SV001 đăng ký xe vé tháng thứ 3 (đã có 2 xe)
--- Kỳ vọng: Lỗi vượt quá giới hạn 2 xe vé tháng cùng thời điểm
+-- Kỳ vọng: Lỗi: Mỗi sinh viên chỉ được đăng ký tối đa 2 xe vé tháng cùng thời điểm
 -- INSERT INTO xe_ve_thang (bien_so, ma_sv, loai_xe, ngay_dang_ky, ngay_huy)
 -- VALUES ('29A-33333', 'SV001', 'Xe may AirBlade', '2026-10-15', NULL);
 
 -- [Test 4]: Ghi nhận gửi xe trước ngày đăng ký vé tháng
--- Kỳ vọng: Lỗi xe chưa đăng ký hoặc vé tháng không còn hiệu lực
+-- Kỳ vọng: Lỗi: Xe chưa đăng ký hoặc vé tháng không còn hiệu lực tại ngày gửi
 -- INSERT INTO luot_gui_lay_xe (bien_so, thoi_gian_gui, thoi_gian_lay)
 -- VALUES ('15B-55555', '2026-10-01 08:00:00', '2026-10-01 10:00:00');

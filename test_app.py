@@ -244,10 +244,10 @@ render_reports(10, 2026)
 
         # 2. Kiem tra 4 kich ban vi pham trigger
         expected_keywords = {
-            1: "Phong da du so nguoi toi da",
-            2: "Sinh vien da co lich su o phong trung khoang thoi gian nay",
-            3: "Moi sinh vien chi duoc dang ky toi da 2 xe ve thang cung thoi diem",
-            4: "Xe chua dang ky hoac ve thang khong con hieu luc tai ngay gui",
+            1: "Phòng đã đủ số người tối đa",
+            2: "trong khoảng thời gian này",
+            3: "Mỗi sinh viên chỉ được đăng ký tối đa 2 xe vé tháng",
+            4: "Xe chưa đăng ký hoặc vé tháng không còn hiệu lực",
         }
 
         for tid, keyword in expected_keywords.items():
@@ -418,12 +418,12 @@ render_trigger_validation()
         # Xep SV006 vao phong A102 da day (2/2 cho) -> Bi trigger chan
         success, msg = checkin_student("SV006", "A102", "2026-10-25", 650000.0)
         self.assertFalse(success)
-        self.assertIn("Phong da du so nguoi toi da", msg)
+        self.assertIn("Phòng đã đủ số người tối đa", msg)
 
         # Xep SV002 trung thoi gian dang o A101 -> Bi trigger chan trung lich
         success2, msg2 = checkin_student("SV002", "B201", "2026-10-20", 300000.0)
         self.assertFalse(success2)
-        self.assertIn("trung khoang thoi gian nay", msg2)
+        self.assertIn("trong khoảng thời gian này", msg2)
 
     def test_tab4_checkout_and_transfer_transaction(self):
         """Kiem tra chuc nang tra phong va chuyen phong an toan bang Transaction cua Tab 4."""
@@ -456,7 +456,7 @@ render_trigger_validation()
             don_gia_moi=650000.0,
         )
         self.assertFalse(success_tr)
-        self.assertIn("Phong da du so nguoi toi da", msg_tr)
+        self.assertIn("Phòng đã đủ số người tối đa", msg_tr)
 
         # Xac minh lai SV001 van dang o phong A101 (ngay_ra IS NULL)
         stays_after = get_active_stays()
@@ -511,7 +511,7 @@ render_trigger_validation()
                 ngay_dang_ky=datetime.date(2026, 10, 25),
             )
             self.assertFalse(success_err)
-            self.assertIn("Moi sinh vien chi duoc dang ky toi da 2 xe ve thang", msg_err)
+            self.assertIn("Mỗi sinh viên chỉ được đăng ký tối đa 2 xe vé tháng", msg_err)
 
             # 3. Đăng ký xe hợp lệ cho SV003 (chưa có xe nào)
             success_ok, msg_ok = register_monthly_ticket(
@@ -560,7 +560,7 @@ render_trigger_validation()
                 datetime.datetime(2026, 10, 5, 9, 0, 0),
             )
             self.assertFalse(suc_fail)
-            self.assertIn("Xe chua dang ky hoac ve thang khong con hieu luc", msg_fail)
+            self.assertIn("Xe chưa đăng ký hoặc vé tháng không còn hiệu lực", msg_fail)
 
             # 7. Kiểm tra hàm get_parking_logs có dữ liệu của bien_so_test
             df_logs = get_parking_logs(bien_so=bien_so_test)

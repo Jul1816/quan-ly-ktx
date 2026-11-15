@@ -78,7 +78,7 @@ def run_trigger_test(test_id: int) -> tuple[bool, str, str]:
         Khi trigger chan loi dung ky vong, thanh_cong se la False va thong_diep_loi chua thong bao tu MySQL.
     """
     if test_id not in TRIGGER_TEST_SCENARIOS:
-        return False, "", f"Kich ban test khong ton tai: {test_id}"
+        return False, "", f"Kịch bản kiểm thử không tồn tại: {test_id}"
 
     scenario = TRIGGER_TEST_SCENARIOS[test_id]
     sql_insert = scenario["sql"]

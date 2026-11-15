@@ -8,10 +8,18 @@ Cung cấp các hàm tiện ích bám sát Streamlit Best Practices:
 """
 
 import io
+import re
 from decimal import Decimal
 from typing import Optional, Union
 import streamlit as st
 import pandas as pd
+
+
+def _clean_feedback_message(message: str) -> str:
+    """Loại bỏ tiền tố lặp như 'Lỗi: Loi:', 'Lỗi: Lỗi:', 'Loi: Loi:'."""
+    if not message:
+        return ""
+    return re.sub(r'^(?:Lỗi|Loi):\s*(?:Lỗi|Loi):\s*', 'Lỗi: ', str(message).strip(), flags=re.IGNORECASE)
 
 
 def styled_header(title: str, subtitle: Optional[str] = None) -> None:
@@ -31,7 +39,7 @@ def set_flash_feedback(success: bool, message: str, trigger_toast: bool = True) 
     """Lưu trữ thông báo tạm thời vào session_state để hiển thị sau st.rerun()."""
     st.session_state["_flash_feedback"] = {
         "success": bool(success),
-        "message": str(message),
+        "message": _clean_feedback_message(message),
         "trigger_toast": bool(trigger_toast),
     }
 
@@ -55,15 +63,16 @@ def render_pending_feedback() -> None:
 
 def show_feedback(success: bool, message: str, use_toast: bool = True) -> None:
     """Hiển thị thông báo kết quả thực thi an toàn kèm toast (dành cho thao tác không rerun)."""
+    clean_msg = _clean_feedback_message(message)
     if use_toast:
         try:
-            st.toast(message, icon=None)
+            st.toast(clean_msg, icon=None)
         except Exception:
             pass
     if success:
-        st.success(message)
+        st.success(clean_msg)
     else:
-        st.error(message)
+        st.error(clean_msg)
 
 
 def display_table(

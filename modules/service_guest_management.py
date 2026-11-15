@@ -695,9 +695,9 @@ def render_tab2_guest_book() -> None:
         clean_cmt = so_cmt_val.strip() if so_cmt_val else ""
         clean_ten = ten_khach_val.strip() if ten_khach_val else ""
         if not clean_cmt:
-            show_feedback(False, "Lỗi: Số CMT / CCCD của khách không được để trống.")
+            show_feedback(False, "Số CMT / CCCD của khách không được để trống.")
         elif not clean_ten:
-            show_feedback(False, "Lỗi: Họ tên khách đến thăm không được để trống.")
+            show_feedback(False, "Họ tên khách đến thăm không được để trống.")
         else:
             tg_den = datetime.datetime.combine(d_den, t_den)
             suc, msg = record_guest_visit(

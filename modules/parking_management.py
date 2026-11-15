@@ -348,7 +348,7 @@ def render_tab1_monthly_tickets() -> None:
                         )
                         st.rerun()
                     else:
-                        show_feedback(False, f"Lỗi: {msg}")
+                        show_feedback(False, msg)
 
     with col_cancel:
         st.markdown("**Hủy vé xe tháng**")
@@ -412,7 +412,7 @@ def render_tab1_monthly_tickets() -> None:
                             )
                             st.rerun()
                         else:
-                            show_feedback(False, f"Lỗi: {msg}")
+                            show_feedback(False, msg)
 
 
 def render_tab2_parking_turns() -> None:
@@ -470,13 +470,13 @@ def render_tab2_parking_turns() -> None:
     if btn_record:
         clean_bs = bien_so_val.strip().upper() if bien_so_val else ""
         if not clean_bs:
-            st.error("Lỗi: Vui lòng chọn hoặc nhập biển số xe.")
+            st.error("Vui lòng chọn hoặc nhập biển số xe.")
         else:
             tg_gui = datetime.datetime.combine(d_gui, t_gui)
             tg_lay = datetime.datetime.combine(d_lay, t_lay)
 
             if tg_lay <= tg_gui:
-                st.error("Lỗi: Thời gian lấy xe phải sau thời gian gửi.")
+                st.error("Thời gian lấy xe phải sau thời gian gửi.")
             else:
                 ok, msg, fee, turn = record_parking_turn(clean_bs, tg_gui, tg_lay)
                 if ok:
@@ -501,7 +501,7 @@ def render_tab2_parking_turns() -> None:
                             f"Đã ghi nhận lượt gửi/lấy xe {clean_bs} thành công! Đây là lượt thứ {turn} trong ngày. Số tiền phải trả: {format_vnd(fee)}"
                         )
                 else:
-                    show_feedback(False, f"Lỗi: {msg}")
+                    show_feedback(False, msg)
 
     st.markdown("---")
 
